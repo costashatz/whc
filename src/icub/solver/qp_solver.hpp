@@ -12,11 +12,11 @@ namespace icub {
         class QPSolver {
         public:
             QPSolver() {}
-            QPSolver(model::iCub* icub) : _icub(icub) {}
+            QPSolver(std::shared_ptr<robot_dart::Robot> robot) : _robot(robot) {}
 
-            void set_icub(model::iCub* icub)
+            void set_icub(std::shared_ptr<robot_dart::Robot> robot)
             {
-                _icub = icub;
+                _robot = robot;
             }
 
             void clear_all()
@@ -47,9 +47,9 @@ namespace icub {
             void add_contact(const std::string& body_name, Args... args)
             {
                 // Add contact constraint
-                _contact_constraints.emplace_back(constraint::create_constraint<constraint::ContactConstraint>(_icub->skeleton(), body_name, std::forward<Args>(args)...));
+                _contact_constraints.emplace_back(constraint::create_constraint<constraint::ContactConstraint>(_robot->skeleton(), body_name, std::forward<Args>(args)...));
                 // Add zero acceleration task
-                _tasks.emplace_back(task::create_task<task::AccelerationTask>(_icub->skeleton(), body_name, Eigen::VectorXd::Zero(6)));
+                _tasks.emplace_back(task::create_task<task::AccelerationTask>(_robot->skeleton(), body_name, Eigen::VectorXd::Zero(6)));
             }
 
             size_t dim() { return _dim; }
@@ -59,7 +59,7 @@ namespace icub {
 
         protected:
             std::unique_ptr<qpOASES::QProblem> _solver = nullptr;
-            model::iCub* _icub;
+            std::shared_ptr<robot_dart::Robot> _robot;
             std::vector<std::unique_ptr<task::AbstractTask>> _tasks;
             std::vector<std::unique_ptr<constraint::ContactConstraint>> _contact_constraints;
             std::vector<std::unique_ptr<constraint::AbstractConstraint>> _constraints;
@@ -71,7 +71,7 @@ namespace icub {
 
             void _setup_matrices()
             {
-                size_t dofs = _icub->skeleton()->getNumDofs();
+                size_t dofs = _robot->skeleton()->getNumDofs();
                 size_t size = 0;
                 size_t contacts = _contact_constraints.size();
                 size_t N = contacts * 6;
@@ -104,13 +104,13 @@ namespace icub {
                 _lb = Eigen::VectorXd::Zero(_dim);
                 _ub = Eigen::VectorXd::Zero(_dim);
 
-                _lb.head(dofs) = _icub->skeleton()->getAccelerationLowerLimits();
-                _ub.head(dofs) = _icub->skeleton()->getAccelerationUpperLimits();
+                _lb.head(dofs) = _robot->skeleton()->getAccelerationLowerLimits();
+                _ub.head(dofs) = _robot->skeleton()->getAccelerationUpperLimits();
                 // _lb.head(dofs) = Eigen::VectorXd::Constant(dofs, -200.);
                 // _ub.head(dofs) = Eigen::VectorXd::Constant(dofs, 200.);
 
-                _lb.segment(dofs, dofs) = _icub->skeleton()->getForceLowerLimits();
-                _ub.segment(dofs, dofs) = _icub->skeleton()->getForceUpperLimits();
+                _lb.segment(dofs, dofs) = _robot->skeleton()->getForceLowerLimits();
+                _ub.segment(dofs, dofs) = _robot->skeleton()->getForceUpperLimits();
 
                 // _lb.segment(2 * dofs, 5 * 6) = Eigen::VectorXd::Zero(30);
                 // _ub.segment(2 * dofs, 5 * 6) = Eigen::VectorXd::Zero(30);
@@ -209,9 +209,10 @@ namespace icub {
 
                 Eigen::VectorXd x(_dim);
                 _solver->getPrimalSolution(x.data());
-                std::cout << "acc: " << x.head(38).transpose() << std::endl;
-                std::cout << "tau: " << x.segment(38 + 6, 32).transpose() << std::endl;
-                std::cout << "F: " << x.tail(x.size() - (38 + 6 + 32)).transpose() << std::endl;
+                std::cout << x.transpose() << std::endl;
+                // std::cout << "acc: " << x.head(38).transpose() << std::endl;
+                // std::cout << "tau: " << x.segment(38 + 6, 32).transpose() << std::endl;
+                // std::cout << "F: " << x.tail(x.size() - (38 + 6 + 32)).transpose() << std::endl;
             }
         };
     } // namespace solver

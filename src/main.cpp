@@ -14,10 +14,17 @@
 
 int main()
 {
+    // std::vector<std::pair<std::string, std::string>> packages = {{"iiwa_description", std::string(RESPATH) + "/iiwa/"}};
+    // auto iiwa = std::make_shared<robot_dart::Robot>(std::string(RESPATH) + "/iiwa/iiwa14.urdf", packages);
+
+    // icub::solver::QPSolver qp(iiwa);
+    // qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(iiwa->skeleton(), "iiwa_link_ee", Eigen::VectorXd::Zero(6)));
+    // qp.add_constraint(icub::constraint::create_constraint<icub::constraint::DynamicsConstraint>(iiwa->skeleton(), false));
+    // qp.solve();
     std::srand(std::time(NULL));
     icub::model::iCub icub("MyiCub");
 
-    icub::solver::QPSolver qp(&icub);
+    icub::solver::QPSolver qp(icub.robot());
     qp.add_task(icub::task::create_task<icub::task::COMAccelerationTask>(icub.skeleton(), Eigen::VectorXd::Zero(6)));
     qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(icub.skeleton(), "r_hand", Eigen::VectorXd::Zero(6)));
     qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(icub.skeleton(), "l_hand", Eigen::VectorXd::Zero(6)));
