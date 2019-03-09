@@ -17,25 +17,28 @@ int main()
     std::srand(std::time(NULL));
     icub::model::iCub icub("MyiCub");
 
-//     auto iCub_robot = icub.robot();
-//     iCub_robot->free_from_world();
-//     iCub_robot->set_position_enforced(true);
-//     iCub_robot->skeleton()->setPosition(5, 0.8);
+    icub::solver::QPSolver<> qp(&icub);
+    qp.solve(Eigen::VectorXd::Zero(5 * 6));
 
-//     iCub_robot->set_actuator_types(dart::dynamics::Joint::SERVO);
-//     for (int i = 0; i < 6; i++)
-//         iCub_robot->skeleton()->getDof(i)->getJoint()->setActuatorType(dart::dynamics::Joint::FORCE);
+    //     auto iCub_robot = icub.robot();
+    //     iCub_robot->free_from_world();
+    //     iCub_robot->set_position_enforced(true);
+    //     iCub_robot->skeleton()->setPosition(5, 0.8);
 
-//     robot_dart::RobotDARTSimu simu(0.001);
+    //     iCub_robot->set_actuator_types(dart::dynamics::Joint::SERVO);
+    //     for (int i = 0; i < 6; i++)
+    //         iCub_robot->skeleton()->getDof(i)->getJoint()->setActuatorType(dart::dynamics::Joint::FORCE);
 
-//     simu.world()->getConstraintSolver()->setCollisionDetector(dart::collision::BulletCollisionDetector::create());
-// #ifdef GRAPHIC
-//     simu.set_graphics(std::make_shared<robot_dart::graphics::Graphics>(simu.world()));
-// #endif
-//     simu.add_robot(iCub_robot);
-//     simu.add_floor(10., 0.2);
+    //     robot_dart::RobotDARTSimu simu(0.001);
 
-//     simu.run(5);
+    //     simu.world()->getConstraintSolver()->setCollisionDetector(dart::collision::BulletCollisionDetector::create());
+    // #ifdef GRAPHIC
+    //     simu.set_graphics(std::make_shared<robot_dart::graphics::Graphics>(simu.world()));
+    // #endif
+    //     simu.add_robot(iCub_robot);
+    //     simu.add_floor(10., 0.2);
+
+    //     simu.run(5);
 
     // /* Setup data of first QP. */
     // qpOASES::real_t H[2 * 2] = {1.0, 0.0, 0.0, 0.5};
