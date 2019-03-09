@@ -65,7 +65,7 @@ namespace icub {
             std::vector<std::unique_ptr<constraint::AbstractConstraint>> _constraints;
 
             // QP matrices
-            size_t _dim;
+            size_t _dim, _num_constraints;
             Eigen::MatrixXd _H, _A;
             Eigen::VectorXd _g, _ub, _lb, _ubA, _lbA;
 
@@ -104,23 +104,29 @@ namespace icub {
                 _lb = Eigen::VectorXd::Zero(_dim);
                 _ub = Eigen::VectorXd::Zero(_dim);
 
-                _lb.head(dofs) = _icub->robot()->skeleton()->getAccelerationLowerLimits();
-                _ub.head(dofs) = _icub->robot()->skeleton()->getAccelerationUpperLimits();
+                _lb.head(dofs) = _icub->skeleton()->getAccelerationLowerLimits();
+                _ub.head(dofs) = _icub->skeleton()->getAccelerationUpperLimits();
+                // _lb.head(dofs) = Eigen::VectorXd::Constant(dofs, -200.);
+                // _ub.head(dofs) = Eigen::VectorXd::Constant(dofs, 200.);
 
-                _lb.segment(dofs, dofs) = _icub->robot()->skeleton()->getForceLowerLimits();
-                _ub.segment(dofs, dofs) = _icub->robot()->skeleton()->getForceUpperLimits();
+                _lb.segment(dofs, dofs) = _icub->skeleton()->getForceLowerLimits();
+                _ub.segment(dofs, dofs) = _icub->skeleton()->getForceUpperLimits();
 
                 // _lb.segment(2 * dofs, 5 * 6) = Eigen::VectorXd::Zero(30);
                 // _ub.segment(2 * dofs, 5 * 6) = Eigen::VectorXd::Zero(30);
                 // _lb.segment(2 * dofs, 5 * 6) = Eigen::VectorXd::Constant(5 * 6, -std::numeric_limits<double>::max());
                 // _ub.segment(2 * dofs, 5 * 6) = Eigen::VectorXd::Constant(5 * 6, std::numeric_limits<double>::max());
                 // TO-DO: Get somehow the force limits
+                for (size_t i = 0; i < contacts; i++) {
+                    _ub.segment(2 * dofs + i * 6 + 3, 3) << 500., 500., 500.;
+                }
 
                 size_t num_of_constraints = 0;
                 for (size_t i = 0; i < _constraints.size(); i++)
                     num_of_constraints += _constraints[i]->N();
                 for (size_t i = 0; i < _contact_constraints.size(); i++)
                     num_of_constraints += _contact_constraints[i]->N();
+                _num_constraints = num_of_constraints;
 
                 _A = Eigen::MatrixXd::Zero(num_of_constraints, _dim);
                 _ubA = Eigen::VectorXd::Zero(num_of_constraints);
@@ -138,7 +144,7 @@ namespace icub {
 
                 for (size_t i = 0; i < _contact_constraints.size(); i++) {
                     Eigen::MatrixXd mat, bounds;
-                    std::tie(mat, bounds) = _contact_constraints[i]->data(*this);
+                    std::tie(mat, bounds) = _contact_constraints[i]->data(*this, i);
                     _A.block(c_index, 0, mat.rows(), mat.cols()) = mat;
                     _lbA.segment(c_index, bounds.cols()) = bounds.row(0);
                     _ubA.segment(c_index, bounds.cols()) = bounds.row(1);
@@ -148,22 +154,64 @@ namespace icub {
 
             void _solve()
             {
-                size_t dofs = _icub->robot()->skeleton()->getNumDofs();
-
                 if (!_solver)
-                    _solver = std::unique_ptr<qpOASES::QProblem>(new qpOASES::QProblem(_dim, dofs));
+                    _solver = std::unique_ptr<qpOASES::QProblem>(new qpOASES::QProblem(_dim, _num_constraints));
 
                 auto options = _solver->getOptions();
                 options.printLevel = qpOASES::PL_LOW;
+                // options.enableFarBounds = qpOASES::BT_TRUE;
+                // options.enableFlippingBounds = qpOASES::BT_TRUE;
                 _solver->setOptions(options);
-                int nWSR = 200;
+                int nWSR = 500;
                 // qpOASES uses row-major storing
                 // check if values are passed correctly
-                _solver->init(_H.transpose().data(), _g.data(), _A.transpose().data(), _lb.data(), _ub.data(), _lbA.data(), _ubA.data(), nWSR);
+
+                qpOASES::real_t* H = new qpOASES::real_t[_dim * _dim];
+                qpOASES::real_t* A = new qpOASES::real_t[_num_constraints * _dim];
+                qpOASES::real_t* g = new qpOASES::real_t[_dim];
+                qpOASES::real_t* lb = new qpOASES::real_t[_dim];
+                qpOASES::real_t* ub = new qpOASES::real_t[_dim];
+                qpOASES::real_t* lbA = new qpOASES::real_t[_num_constraints];
+                qpOASES::real_t* ubA = new qpOASES::real_t[_num_constraints];
+
+                for (int i = 0; i < _H.rows(); i++) {
+                    for (int j = 0; j < _H.cols(); j++) {
+                        H[i * _H.cols() + j] = _H(i, j);
+                    }
+                }
+
+                for (int i = 0; i < _A.rows(); i++) {
+                    for (int j = 0; j < _A.cols(); j++) {
+                        A[i * _A.cols() + j] = _A(i, j);
+                    }
+                }
+
+                for (int i = 0; i < _g.size(); i++) {
+                    g[i] = _g(i);
+                    lb[i] = _lb(i);
+                    ub[i] = _ub(i);
+                }
+
+                for (size_t i = 0; i < _num_constraints; i++) {
+                    lbA[i] = _lbA(i);
+                    ubA[i] = _ubA(i);
+                }
+
+                _solver->init(H, g, A, lb, ub, lbA, ubA, nWSR);
+
+                delete[] H;
+                delete[] A;
+                delete[] g;
+                delete[] lb;
+                delete[] ub;
+                delete[] lbA;
+                delete[] ubA;
 
                 Eigen::VectorXd x(_dim);
                 _solver->getPrimalSolution(x.data());
-                std::cout << x.transpose() << std::endl;
+                std::cout << "acc: " << x.head(38).transpose() << std::endl;
+                std::cout << "tau: " << x.segment(38 + 6, 32).transpose() << std::endl;
+                std::cout << "F: " << x.tail(x.size() - (38 + 6 + 32)).transpose() << std::endl;
             }
         };
     } // namespace solver

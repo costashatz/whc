@@ -16,7 +16,7 @@ namespace icub {
 
         class AbstractConstraint {
         public:
-            virtual std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::QPSolver&) = 0;
+            virtual std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::QPSolver&, size_t index = 0) = 0;
 
             virtual size_t N() const = 0;
             virtual std::string get_type() const = 0;
@@ -26,7 +26,7 @@ namespace icub {
         public:
             DynamicsConstraint(const dart::dynamics::SkeletonPtr& skeleton, bool floating_base = true);
 
-            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::QPSolver& solver);
+            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::QPSolver& solver, size_t index = 0);
 
             size_t N() const;
             std::string get_type() const;
@@ -36,11 +36,17 @@ namespace icub {
             bool _floating_base;
         };
 
+        struct Contact {
+            Eigen::VectorXd normal; // pointing towards the robot
+            Eigen::VectorXd t1, t2; // orthonomal basis for contact
+            double mu;
+        };
+
         class ContactConstraint : public AbstractConstraint {
         public:
-            ContactConstraint(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, double mu, const Eigen::VectorXd& normal);
+            ContactConstraint(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, const Contact& contact);
 
-            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::QPSolver& solver);
+            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::QPSolver& solver, size_t index);
 
             Eigen::MatrixXd get_jacobian() const;
 
@@ -50,8 +56,7 @@ namespace icub {
         protected:
             dart::dynamics::SkeletonPtr _skeleton;
             std::string _body_name;
-            double _mu;
-            Eigen::VectorXd _normal; // pointing towards the robot
+            Contact _contact;
         };
     } // namespace constraint
 } // namespace icub

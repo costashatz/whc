@@ -6,7 +6,7 @@ namespace icub {
         DynamicsConstraint::DynamicsConstraint(const dart::dynamics::SkeletonPtr& skeleton, bool floating_base)
             : _skeleton(skeleton), _floating_base(floating_base) {}
 
-        std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DynamicsConstraint::data(solver::QPSolver& solver)
+        std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DynamicsConstraint::data(solver::QPSolver& solver, size_t)
         {
             size_t dofs = _skeleton->getNumDofs();
             size_t contacts = solver.contacts().size();
@@ -50,20 +50,33 @@ namespace icub {
             return "dynamics";
         }
 
-        ContactConstraint::ContactConstraint(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, double mu, const Eigen::VectorXd& normal)
-            : _skeleton(skeleton), _body_name(body_name), _mu(mu), _normal(normal) {}
+        ContactConstraint::ContactConstraint(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, const Contact& contact)
+            : _skeleton(skeleton), _body_name(body_name), _contact(contact) {}
 
-        std::pair<Eigen::MatrixXd, Eigen::MatrixXd> ContactConstraint::data(solver::QPSolver& solver)
+        // Friction cones from:
+        //  M. Focchi, A. Del Prete, I. Havoutis, R. Featherstone, D. G.
+        // Caldwell, and C. Semini, “High-slope terrain locomotion
+        // for torque-controlled quadruped robots,” Autonomous Robots,
+        // vol. 41, no. 1, pp. 259–272, 2017
+        std::pair<Eigen::MatrixXd, Eigen::MatrixXd> ContactConstraint::data(solver::QPSolver& solver, size_t index)
         {
-            // size_t dofs = _skeleton->getNumDofs();
+            size_t dofs = _skeleton->getNumDofs();
             size_t dim = solver.dim();
-
-            Eigen::MatrixXd A = Eigen::MatrixXd::Identity(6, dim);
-            // Eigen::MatrixXd bounds = Eigen::MatrixXd::Ones(2, 6);
-            // bounds.row(0) = -bounds.row(0);
-            Eigen::MatrixXd bounds = Eigen::MatrixXd::Zero(2, 6);
-
+            size_t start_i = 2 * dofs + index * 6;
+            double max = std::numeric_limits<double>::max();
             // TO-DO: Fix this
+            double min_f = 0.;
+            double max_f = 500.;
+
+            Eigen::MatrixXd A = Eigen::MatrixXd::Zero(5, dim);
+            A.block(0, start_i + 3, 1, 3) = -(_contact.mu * _contact.normal + _contact.t1).transpose();
+            A.block(1, start_i + 3, 1, 3) = -(_contact.mu * _contact.normal + _contact.t2).transpose();
+            A.block(2, start_i + 3, 1, 3) = (_contact.mu * _contact.normal + _contact.t1).transpose();
+            A.block(3, start_i + 3, 1, 3) = (_contact.mu * _contact.normal + _contact.t2).transpose();
+            A.block(4, start_i + 3, 1, 3) = _contact.normal.transpose();
+            Eigen::MatrixXd bounds = Eigen::MatrixXd::Zero(2, 5);
+            bounds.row(0) << -max, -max, 0., 0., min_f;
+            bounds.row(1) << 0., 0., max, max, max_f;
 
             return std::make_pair(A, bounds);
         }
