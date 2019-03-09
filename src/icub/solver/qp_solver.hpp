@@ -3,11 +3,12 @@
 
 #include <qpOASES.hpp>
 
+#include <icub/constraint/constraint.hpp>
 #include <icub/model/iCub.hpp>
+#include <icub/task/task.hpp>
 
 namespace icub {
     namespace solver {
-        template <typename QPProblem = qpOASES::QProblem>
         class QPSolver {
         public:
             QPSolver() {}
@@ -18,86 +19,86 @@ namespace icub {
                 _icub = icub;
             }
 
-            void solve(const Eigen::VectorXd& desired_eef_acc)
+            void clear_all()
             {
-                setup_matrices(desired_eef_acc);
-                solve();
+                _tasks.clear();
             }
 
-            void setup_matrices(const Eigen::VectorXd& desired_eef_acc)
+            void solve()
             {
-                // Get mass matrix
-                _M = _icub->robot()->skeleton()->getMassMatrix();
-                // Get gravity/coriolis forces
-                _Cg = _icub->robot()->skeleton()->getCoriolisAndGravityForces();
-                // Selection matrix
-                _S = Eigen::MatrixXd::Identity(_icub->robot()->skeleton()->getNumDofs(), _icub->robot()->skeleton()->getNumDofs());
-                _S.diagonal().head(6) = Eigen::VectorXd::Zero(6);
-                // Get joint velocities
-                _dq = _icub->robot()->skeleton()->getVelocities();
-                // Get Jacobians for COM
-                _J_com = _icub->robot()->skeleton()->getCOMJacobian();
-                _dJ_com = _icub->robot()->skeleton()->getCOMJacobianSpatialDeriv();
-                // Get Jacobians for end-effectors
-                auto legs = model::leg_eefs();
-                auto hands = model::arm_eefs();
+                _setup_matrices();
+                _solve();
+            }
 
-                _J_rhand = _icub->robot()->skeleton()->getWorldJacobian(_icub->robot()->skeleton()->getBodyNode(hands[0]));
-                _dJ_rhand = _icub->robot()->skeleton()->getJacobianSpatialDeriv(_icub->robot()->skeleton()->getBodyNode(hands[0]), dart::dynamics::Frame::World());
+            void add_task(std::unique_ptr<task::AbstractTask> task)
+            {
+                _tasks.emplace_back(std::move(task));
+            }
 
-                _J_lhand = _icub->robot()->skeleton()->getWorldJacobian(_icub->robot()->skeleton()->getBodyNode(hands[1]));
-                _dJ_lhand = _icub->robot()->skeleton()->getJacobianSpatialDeriv(_icub->robot()->skeleton()->getBodyNode(hands[1]), dart::dynamics::Frame::World());
+            void add_constraint(std::unique_ptr<constraint::AbstractConstraint> constraint)
+            {
+                if (constraint->get_type() != "contact") {
+                    _constraints.emplace_back(std::move(constraint));
+                }
+                // TO-DO: warning message
+            }
 
-                _J_rfoot = _icub->robot()->skeleton()->getWorldJacobian(_icub->robot()->skeleton()->getBodyNode(legs[0]));
-                _dJ_rfoot = _icub->robot()->skeleton()->getJacobianSpatialDeriv(_icub->robot()->skeleton()->getBodyNode(legs[0]), dart::dynamics::Frame::World());
+            void add_contact(const std::string& body_name, double mu)
+            {
+                // Add contact constraint
+                _contact_constraints.emplace_back(constraint::create_constraint<constraint::ContactConstraint>(_icub->skeleton(), body_name, mu));
+                // Add zero acceleration task
+                _tasks.emplace_back(task::create_task<task::AccelerationTask>(_icub->skeleton(), body_name, Eigen::VectorXd::Zero(6)));
+            }
 
-                _J_lfoot = _icub->robot()->skeleton()->getWorldJacobian(_icub->robot()->skeleton()->getBodyNode(legs[1]));
-                _dJ_lfoot = _icub->robot()->skeleton()->getJacobianSpatialDeriv(_icub->robot()->skeleton()->getBodyNode(legs[1]), dart::dynamics::Frame::World());
+            size_t dim() { return _dim; }
+            std::vector<std::unique_ptr<task::AbstractTask>>& tasks() { return _tasks; }
+            std::vector<std::unique_ptr<constraint::ContactConstraint>>& contacts() { return _contact_constraints; }
+            std::vector<std::unique_ptr<constraint::AbstractConstraint>>& constraints() { return _constraints; }
 
-                // std::cout << "M: " << _M.rows() << "x" << _M.cols() << std::endl;
-                // std::cout << "Cg: " << _Cg.size() << std::endl;
-                // std::cout << "S: " << _S.rows() << "x" << _S.cols() << std::endl;
-                // std::cout << "dq: " << _dq.size() << std::endl;
-                // std::cout << "J_com: " << _J_com.rows() << "x" << _J_com.cols() << std::endl;
-                // std::cout << "dJ_com: " << _dJ_com.rows() << "x" << _dJ_com.cols() << std::endl;
-                // std::cout << "J_rhand: " << _J_rhand.rows() << "x" << _J_rhand.cols() << std::endl;
-                // std::cout << "dJ_rhand: " << _dJ_rhand.rows() << "x" << _dJ_rhand.cols() << std::endl;
-                // std::cout << "J_lhand: " << _J_lhand.rows() << "x" << _J_lhand.cols() << std::endl;
-                // std::cout << "dJ_lhand: " << _dJ_lhand.rows() << "x" << _dJ_lhand.cols() << std::endl;
-                // std::cout << "J_rfoot: " << _J_rfoot.rows() << "x" << _J_rfoot.cols() << std::endl;
-                // std::cout << "dJ_rfoot: " << _dJ_rfoot.rows() << "x" << _dJ_rfoot.cols() << std::endl;
-                // std::cout << "J_lfoot: " << _J_lfoot.rows() << "x" << _J_lfoot.cols() << std::endl;
-                // std::cout << "dJ_lfoot: " << _dJ_lfoot.rows() << "x" << _dJ_lfoot.cols() << std::endl;
+        protected:
+            std::unique_ptr<qpOASES::QProblem> _solver = nullptr;
+            model::iCub* _icub;
+            std::vector<std::unique_ptr<task::AbstractTask>> _tasks;
+            std::vector<std::unique_ptr<constraint::ContactConstraint>> _contact_constraints;
+            std::vector<std::unique_ptr<constraint::AbstractConstraint>> _constraints;
 
-                size_t dofs = _icub->robot()->skeleton()->getNumDofs();
-                _dim = 2 * dofs + 5 * 6;
-                Eigen::MatrixXd tmp = Eigen::MatrixXd::Zero(_J_com.rows() * 5, _dim);
+            // QP matrices
+            size_t _dim;
+            Eigen::MatrixXd _H, _A;
+            Eigen::VectorXd _g, _ub, _lb, _ubA, _lbA;
+
+            void _setup_matrices()
+            {
+                size_t dofs = _icub->skeleton()->getNumDofs();
+                size_t size = 0;
+                size_t contacts = _contact_constraints.size();
+                size_t N = contacts * 6;
+
+                std::vector<Eigen::MatrixXd> A_matrices(_tasks.size());
+                std::vector<Eigen::VectorXd> b_vectors(_tasks.size());
+
+                for (size_t i = 0; i < _tasks.size(); i++) {
+                    std::tie(A_matrices[i], b_vectors[i]) = _tasks[i]->get_costs();
+                    size += A_matrices[i].rows();
+                }
+
+                _dim = 2 * dofs + N;
+                Eigen::MatrixXd A = Eigen::MatrixXd::Zero(size, _dim);
+                Eigen::VectorXd b = Eigen::VectorXd::Zero(size);
 
                 size_t index = 0;
-                tmp.block(index, 0, _J_com.rows(), _J_com.cols()) = _J_com;
-                index += _J_com.rows();
-                tmp.block(index, 0, _J_rhand.rows(), _J_rhand.cols()) = _J_rhand;
-                index += _J_rhand.rows();
-                tmp.block(index, 0, _J_lhand.rows(), _J_lhand.cols()) = _J_lhand;
-                index += _J_lhand.rows();
-                tmp.block(index, 0, _J_rfoot.rows(), _J_rfoot.cols()) = _J_rfoot;
-                index += _J_rfoot.rows();
-                tmp.block(index, 0, _J_lfoot.rows(), _J_lfoot.cols()) = _J_lfoot;
+                size_t b_index = 0;
+                for (size_t i = 0; i < _tasks.size(); i++) {
+                    A.block(index, 0, A_matrices[i].rows(), A_matrices[i].cols()) = A_matrices[i];
+                    index += A_matrices[i].rows();
 
-                Eigen::VectorXd tmp_vec = desired_eef_acc;
-                index = 0;
-                tmp_vec.segment(index, 6) -= _dJ_com * _dq;
-                index += 6;
-                tmp_vec.segment(index, 6) -= _dJ_rhand * _dq;
-                index += 6;
-                tmp_vec.segment(index, 6) -= _dJ_lhand * _dq;
-                index += 6;
-                tmp_vec.segment(index, 6) -= _dJ_rfoot * _dq;
-                index += 6;
-                tmp_vec.segment(index, 6) -= _dJ_lfoot * _dq;
+                    b.segment(b_index, b_vectors[i].size()) = b_vectors[i].transpose();
+                    b_index += b_vectors[i].size();
+                }
 
-                _H = tmp.transpose() * tmp;
-                _g = -tmp.transpose() * tmp_vec;
+                _H = A.transpose() * A;
+                _g = -A.transpose() * b;
 
                 _lb = Eigen::VectorXd::Zero(_dim);
                 _ub = Eigen::VectorXd::Zero(_dim);
@@ -112,44 +113,44 @@ namespace icub {
                 // _ub.segment(2 * dofs, 5 * 6) = Eigen::VectorXd::Zero(30);
                 // _lb.segment(2 * dofs, 5 * 6) = Eigen::VectorXd::Constant(5 * 6, -std::numeric_limits<double>::max());
                 // _ub.segment(2 * dofs, 5 * 6) = Eigen::VectorXd::Constant(5 * 6, std::numeric_limits<double>::max());
+                // TO-DO: Get somehow the force limits
 
-                _A = Eigen::MatrixXd::Zero(dofs, _dim);
+                size_t num_of_constraints = 0;
+                for (size_t i = 0; i < _constraints.size(); i++)
+                    num_of_constraints += _constraints[i]->N();
+                for (size_t i = 0; i < _contact_constraints.size(); i++)
+                    num_of_constraints += _contact_constraints[i]->N();
 
-                _A.block(0, 0, dofs, dofs) = _M;
-                _A.block(0, dofs, dofs, dofs) = -_S;
-                _A.block(0, 2 * dofs, dofs, 6) = -_J_com.transpose();
-                _A.block(0, 2 * dofs + 6, dofs, 6) = -_J_rhand.transpose();
-                _A.block(0, 2 * dofs + 12, dofs, 6) = -_J_lhand.transpose();
-                _A.block(0, 2 * dofs + 18, dofs, 6) = -_J_rfoot.transpose();
-                _A.block(0, 2 * dofs + 24, dofs, 6) = -_J_lfoot.transpose();
+                _A = Eigen::MatrixXd::Zero(num_of_constraints, _dim);
+                _ubA = Eigen::VectorXd::Zero(num_of_constraints);
+                _lbA = Eigen::VectorXd::Zero(num_of_constraints);
 
-                // TO-DO: Check this sign
-                _lbA = -_Cg;
-                _ubA = -_Cg;
+                size_t c_index = 0;
+                for (size_t i = 0; i < _constraints.size(); i++) {
+                    Eigen::MatrixXd mat, bounds;
+                    std::tie(mat, bounds) = _constraints[i]->data(*this);
+                    _A.block(c_index, 0, mat.rows(), mat.cols()) = mat;
+                    _lbA.segment(c_index, bounds.cols()) = bounds.row(0);
+                    _ubA.segment(c_index, bounds.cols()) = bounds.row(1);
+                    c_index += mat.rows();
+                }
+
+                for (size_t i = 0; i < _contact_constraints.size(); i++) {
+                    Eigen::MatrixXd mat, bounds;
+                    std::tie(mat, bounds) = _contact_constraints[i]->data(*this);
+                    _A.block(c_index, 0, mat.rows(), mat.cols()) = mat;
+                    _lbA.segment(c_index, bounds.cols()) = bounds.row(0);
+                    _ubA.segment(c_index, bounds.cols()) = bounds.row(1);
+                    c_index += mat.rows();
+                }
             }
 
-            void solve()
+            void _solve()
             {
                 size_t dofs = _icub->robot()->skeleton()->getNumDofs();
 
                 if (!_solver)
-                    _solver = std::unique_ptr<QPProblem>(new QPProblem(_dim, dofs));
-
-                // qpOASES::real_t* H = new qpOASES::real_t[_dim * _dim];
-                // qpOASES::real_t* A = new qpOASES::real_t[dofs * _dim];
-                // qpOASES::real_t* g = new qpOASES::real_t[_dim];
-                // qpOASES::real_t* lb = new qpOASES::real_t[_dim];
-                // qpOASES::real_t* ub = new qpOASES::real_t[_dim];
-                // qpOASES::real_t* lbA = new qpOASES::real_t[dofs];
-                // qpOASES::real_t* ubA = new qpOASES::real_t[dofs];
-
-                // memcpy(H, _H.data(), _dim * _dim * sizeof(double));
-                // memcpy(A, _A.data(), dofs * _dim * sizeof(double));
-                // memcpy(g, _g.data(), _dim * sizeof(double));
-                // memcpy(lb, _lb.data(), _dim * sizeof(double));
-                // memcpy(ub, _ub.data(), _dim * sizeof(double));
-                // memcpy(lbA, _lbA.data(), dofs * sizeof(double));
-                // memcpy(ubA, _ubA.data(), dofs * sizeof(double));
+                    _solver = std::unique_ptr<qpOASES::QProblem>(new qpOASES::QProblem(_dim, dofs));
 
                 auto options = _solver->getOptions();
                 options.printLevel = qpOASES::PL_LOW;
@@ -162,30 +163,7 @@ namespace icub {
                 Eigen::VectorXd x(_dim);
                 _solver->getPrimalSolution(x.data());
                 std::cout << x.transpose() << std::endl;
-
-                // delete[] H;
-                // delete[] A;
-                // delete[] g;
-                // delete[] lb;
-                // delete[] ub;
-                // delete[] lbA;
-                // delete[] ubA;
             }
-
-        protected:
-            std::unique_ptr<QPProblem> _solver = nullptr;
-            model::iCub* _icub;
-
-            // Robot matrices
-            Eigen::MatrixXd _M, _S;
-            Eigen::VectorXd _Cg, _dq;
-            Eigen::MatrixXd _J_com, _J_rhand, _J_lhand, _J_rfoot, _J_lfoot;
-            Eigen::MatrixXd _dJ_com, _dJ_rhand, _dJ_lhand, _dJ_rfoot, _dJ_lfoot;
-
-            // QP matrices
-            size_t _dim;
-            Eigen::MatrixXd _H, _A;
-            Eigen::VectorXd _g, _ub, _lb, _ubA, _lbA;
         };
     } // namespace solver
 } // namespace icub

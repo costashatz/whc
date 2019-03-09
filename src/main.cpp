@@ -17,8 +17,17 @@ int main()
     std::srand(std::time(NULL));
     icub::model::iCub icub("MyiCub");
 
-    icub::solver::QPSolver<> qp(&icub);
-    qp.solve(Eigen::VectorXd::Zero(5 * 6));
+    icub::solver::QPSolver qp(&icub);
+    qp.add_task(icub::task::create_task<icub::task::COMAccelerationTask>(icub.skeleton(), Eigen::VectorXd::Zero(6)));
+    qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(icub.skeleton(), "r_hand", Eigen::VectorXd::Zero(6)));
+    qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(icub.skeleton(), "l_hand", Eigen::VectorXd::Zero(6)));
+    qp.add_constraint(icub::constraint::create_constraint<icub::constraint::DynamicsConstraint>(icub.skeleton()));
+    qp.add_contact("r_sole", 0.1);
+    qp.add_contact("l_sole", 0.1);
+    // qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(icub.skeleton(), "r_sole", Eigen::VectorXd::Zero(6)));
+    // qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(icub.skeleton(), "l_sole", Eigen::VectorXd::Zero(6)));
+    // qp.solve(Eigen::VectorXd::Zero(5 * 6));
+    qp.solve();
 
     //     auto iCub_robot = icub.robot();
     //     iCub_robot->free_from_world();
