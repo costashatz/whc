@@ -43,10 +43,11 @@ namespace icub {
                 // TO-DO: warning message
             }
 
-            void add_contact(const std::string& body_name, double mu)
+            template <typename... Args>
+            void add_contact(const std::string& body_name, Args... args)
             {
                 // Add contact constraint
-                _contact_constraints.emplace_back(constraint::create_constraint<constraint::ContactConstraint>(_icub->skeleton(), body_name, mu));
+                _contact_constraints.emplace_back(constraint::create_constraint<constraint::ContactConstraint>(_icub->skeleton(), body_name, std::forward<Args>(args)...));
                 // Add zero acceleration task
                 _tasks.emplace_back(task::create_task<task::AccelerationTask>(_icub->skeleton(), body_name, Eigen::VectorXd::Zero(6)));
             }

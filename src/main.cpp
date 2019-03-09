@@ -22,8 +22,10 @@ int main()
     qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(icub.skeleton(), "r_hand", Eigen::VectorXd::Zero(6)));
     qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(icub.skeleton(), "l_hand", Eigen::VectorXd::Zero(6)));
     qp.add_constraint(icub::constraint::create_constraint<icub::constraint::DynamicsConstraint>(icub.skeleton()));
-    qp.add_contact("r_sole", 0.1);
-    qp.add_contact("l_sole", 0.1);
+    Eigen::VectorXd up(3);
+    up << 0., 0., 1.;
+    qp.add_contact("r_sole", 0.1, up);
+    qp.add_contact("l_sole", 0.1, up);
     // qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(icub.skeleton(), "r_sole", Eigen::VectorXd::Zero(6)));
     // qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(icub.skeleton(), "l_sole", Eigen::VectorXd::Zero(6)));
     // qp.solve(Eigen::VectorXd::Zero(5 * 6));

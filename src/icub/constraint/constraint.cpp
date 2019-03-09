@@ -50,8 +50,8 @@ namespace icub {
             return "dynamics";
         }
 
-        ContactConstraint::ContactConstraint(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, double mu)
-            : _skeleton(skeleton), _body_name(body_name), _mu(mu) {}
+        ContactConstraint::ContactConstraint(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, double mu, const Eigen::VectorXd& normal)
+            : _skeleton(skeleton), _body_name(body_name), _mu(mu), _normal(normal) {}
 
         std::pair<Eigen::MatrixXd, Eigen::MatrixXd> ContactConstraint::data(solver::QPSolver& solver)
         {

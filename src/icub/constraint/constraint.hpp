@@ -38,7 +38,7 @@ namespace icub {
 
         class ContactConstraint : public AbstractConstraint {
         public:
-            ContactConstraint(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, double mu);
+            ContactConstraint(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, double mu, const Eigen::VectorXd& normal);
 
             std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::QPSolver& solver);
 
@@ -51,6 +51,7 @@ namespace icub {
             dart::dynamics::SkeletonPtr _skeleton;
             std::string _body_name;
             double _mu;
+            Eigen::VectorXd _normal; // pointing towards the robot
         };
     } // namespace constraint
 } // namespace icub
