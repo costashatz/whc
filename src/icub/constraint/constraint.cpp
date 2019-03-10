@@ -33,7 +33,6 @@ namespace icub {
             }
 
             Eigen::MatrixXd bounds(2, dofs);
-            // TO-DO: Check this sign
             bounds.row(0) = -Cg.transpose();
             bounds.row(1) = -Cg.transpose();
 
@@ -64,9 +63,8 @@ namespace icub {
             size_t dim = solver.dim();
             size_t start_i = 2 * dofs + index * 6;
             double max = std::numeric_limits<double>::max();
-            // TO-DO: Fix this
-            double min_f = 0.;
-            double max_f = 500.;
+            double min_f = _contact.min_force;
+            double max_f = _contact.max_force;
 
             Eigen::MatrixXd A = Eigen::MatrixXd::Zero(5, dim);
             A.block(0, start_i + 3, 1, 3) = -(_contact.mu * _contact.normal + _contact.t1).transpose();
@@ -88,6 +86,15 @@ namespace icub {
                 return Eigen::MatrixXd();
 
             return _skeleton->getWorldJacobian(bd);
+        }
+
+        Eigen::MatrixXd ContactConstraint::get_force_limits() const
+        {
+            Eigen::MatrixXd bounds = Eigen::MatrixXd::Zero(2, 6);
+            bounds.row(0) = _contact.min;
+            bounds.row(1) = _contact.max;
+
+            return bounds;
         }
 
         size_t ContactConstraint::N() const

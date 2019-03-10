@@ -112,19 +112,14 @@ namespace icub {
 
                 _lb.head(dofs) = _robot->skeleton()->getAccelerationLowerLimits();
                 _ub.head(dofs) = _robot->skeleton()->getAccelerationUpperLimits();
-                // _lb.head(dofs) = Eigen::VectorXd::Constant(dofs, -200.);
-                // _ub.head(dofs) = Eigen::VectorXd::Constant(dofs, 200.);
 
                 _lb.segment(dofs, dofs) = _robot->skeleton()->getForceLowerLimits();
                 _ub.segment(dofs, dofs) = _robot->skeleton()->getForceUpperLimits();
 
-                // _lb.segment(2 * dofs, 5 * 6) = Eigen::VectorXd::Zero(30);
-                // _ub.segment(2 * dofs, 5 * 6) = Eigen::VectorXd::Zero(30);
-                // _lb.segment(2 * dofs, 5 * 6) = Eigen::VectorXd::Constant(5 * 6, -std::numeric_limits<double>::max());
-                // _ub.segment(2 * dofs, 5 * 6) = Eigen::VectorXd::Constant(5 * 6, std::numeric_limits<double>::max());
-                // TO-DO: Get somehow the force limits
                 for (size_t i = 0; i < contacts; i++) {
-                    _ub.segment(2 * dofs + i * 6 + 3, 3) << 500., 500., 500.;
+                    Eigen::MatrixXd bounds = _contact_constraints[i]->get_force_limits();
+                    _lb.segment(2 * dofs + i * 6, 6) = bounds.row(0);
+                    _ub.segment(2 * dofs + i * 6, 6) = bounds.row(1);
                 }
 
                 size_t num_of_constraints = 0;
@@ -169,9 +164,8 @@ namespace icub {
                 // options.enableFlippingBounds = qpOASES::BT_TRUE;
                 _solver->setOptions(options);
                 int nWSR = 1000;
-                // qpOASES uses row-major storing
-                // check if values are passed correctly
 
+                // qpOASES uses row-major storing
                 qpOASES::real_t* H = new qpOASES::real_t[_dim * _dim];
                 qpOASES::real_t* A = new qpOASES::real_t[_num_constraints * _dim];
                 qpOASES::real_t* g = new qpOASES::real_t[_dim];

@@ -46,6 +46,12 @@ int main()
     c.normal = up;
     c.t1 = t1;
     c.t2 = t2;
+    c.min_force = 0.;
+    c.max_force = 500.;
+    c.min = Eigen::VectorXd::Zero(6);
+    c.max = Eigen::VectorXd::Zero(6);
+    c.max.tail(3) << c.max_force, c.max_force, c.max_force;
+
     qp.add_contact(task_weight, "r_sole", c);
     qp.add_contact(task_weight, "l_sole", c);
     // qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(icub.skeleton(), "r_sole", Eigen::VectorXd::Zero(6)));

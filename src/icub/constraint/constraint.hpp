@@ -40,6 +40,8 @@ namespace icub {
             Eigen::VectorXd normal; // pointing towards the robot
             Eigen::VectorXd t1, t2; // orthonomal basis for contact
             double mu;
+            double min_force, max_force;
+            Eigen::VectorXd min, max; // 6D vectors for lower and upper bounds
         };
 
         class ContactConstraint : public AbstractConstraint {
@@ -49,6 +51,7 @@ namespace icub {
             std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::QPSolver& solver, size_t index);
 
             Eigen::MatrixXd get_jacobian() const;
+            Eigen::MatrixXd get_force_limits() const;
 
             size_t N() const;
             std::string get_type() const;
