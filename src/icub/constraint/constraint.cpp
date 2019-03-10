@@ -92,7 +92,7 @@ namespace icub {
 
         size_t ContactConstraint::N() const
         {
-            return 6;
+            return 5;
         }
 
         std::string ContactConstraint::get_type() const

@@ -120,6 +120,34 @@ namespace icub {
             dart::dynamics::SkeletonPtr _skeleton;
             Eigen::VectorXd _desired_values;
         };
+
+        class TauDiffTask : public AbstractTask {
+        public:
+            TauDiffTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& prev_tau)
+                : _skeleton(skeleton), _prev_tau(prev_tau) {}
+
+            std::pair<Eigen::MatrixXd, Eigen::VectorXd> get_costs() override
+            {
+                size_t dofs = _skeleton->getNumDofs();
+                // Does not return anything for the contacts
+                // the QPSolver should fix/resize the matrices
+                Eigen::MatrixXd A = Eigen::MatrixXd::Zero(2 * dofs, 2 * dofs);
+                A.diagonal().tail(dofs) = Eigen::VectorXd::Ones(dofs);
+                Eigen::VectorXd b = Eigen::VectorXd::Zero(2 * dofs);
+                b.tail(dofs) = _prev_tau;
+
+                return std::make_pair(A, b);
+            }
+
+            std::string get_type() const
+            {
+                return "tau_diff";
+            }
+
+        protected:
+            dart::dynamics::SkeletonPtr _skeleton;
+            Eigen::VectorXd _prev_tau;
+        };
     } // namespace task
 } // namespace icub
 
