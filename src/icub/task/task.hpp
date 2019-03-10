@@ -15,7 +15,6 @@ namespace icub {
         public:
             virtual std::pair<Eigen::MatrixXd, Eigen::VectorXd> get_costs() = 0;
             virtual std::string get_type() const = 0;
-            virtual Eigen::MatrixXd get_jacobian() const = 0;
         };
 
         class AccelerationTask : public AbstractTask {
@@ -32,11 +31,6 @@ namespace icub {
                 Eigen::VectorXd b = _desired_accelerations - _jacobian_deriv * _dq;
 
                 return std::make_pair(A, b);
-            }
-
-            Eigen::MatrixXd get_jacobian() const
-            {
-                return _jacobian;
             }
 
             std::string get_type() const
@@ -79,11 +73,6 @@ namespace icub {
                 Eigen::VectorXd b = _desired_accelerations - _jacobian_deriv * _dq;
 
                 return std::make_pair(A, b);
-            }
-
-            Eigen::MatrixXd get_jacobian() const
-            {
-                return _jacobian;
             }
 
             std::string get_type() const

@@ -22,6 +22,9 @@ namespace icub {
             void clear_all()
             {
                 _tasks.clear();
+                _task_weights.clear();
+                _contact_constraints.clear();
+                _constraints.clear();
             }
 
             void solve()
@@ -30,9 +33,10 @@ namespace icub {
                 _solve();
             }
 
-            void add_task(std::unique_ptr<task::AbstractTask> task)
+            void add_task(std::unique_ptr<task::AbstractTask> task, double weight = 1.)
             {
                 _tasks.emplace_back(std::move(task));
+                _task_weights.push_back(weight);
             }
 
             void add_constraint(std::unique_ptr<constraint::AbstractConstraint> constraint)
@@ -44,12 +48,13 @@ namespace icub {
             }
 
             template <typename... Args>
-            void add_contact(const std::string& body_name, Args... args)
+            void add_contact(double weight, const std::string& body_name, Args... args)
             {
                 // Add contact constraint
                 _contact_constraints.emplace_back(constraint::create_constraint<constraint::ContactConstraint>(_robot->skeleton(), body_name, std::forward<Args>(args)...));
                 // Add zero acceleration task
                 _tasks.emplace_back(task::create_task<task::AccelerationTask>(_robot->skeleton(), body_name, Eigen::VectorXd::Zero(6)));
+                _task_weights.push_back(weight);
             }
 
             size_t dim() { return _dim; }
@@ -61,6 +66,7 @@ namespace icub {
             std::unique_ptr<qpOASES::QProblem> _solver = nullptr;
             std::shared_ptr<robot_dart::Robot> _robot;
             std::vector<std::unique_ptr<task::AbstractTask>> _tasks;
+            std::vector<double> _task_weights;
             std::vector<std::unique_ptr<constraint::ContactConstraint>> _contact_constraints;
             std::vector<std::unique_ptr<constraint::AbstractConstraint>> _constraints;
 
@@ -91,10 +97,10 @@ namespace icub {
                 size_t index = 0;
                 size_t b_index = 0;
                 for (size_t i = 0; i < _tasks.size(); i++) {
-                    A.block(index, 0, A_matrices[i].rows(), A_matrices[i].cols()) = A_matrices[i];
+                    A.block(index, 0, A_matrices[i].rows(), A_matrices[i].cols()) = _task_weights[i] * A_matrices[i];
                     index += A_matrices[i].rows();
 
-                    b.segment(b_index, b_vectors[i].size()) = b_vectors[i].transpose();
+                    b.segment(b_index, b_vectors[i].size()) = _task_weights[i] * b_vectors[i].transpose();
                     b_index += b_vectors[i].size();
                 }
 
@@ -162,7 +168,7 @@ namespace icub {
                 // options.enableFarBounds = qpOASES::BT_TRUE;
                 // options.enableFlippingBounds = qpOASES::BT_TRUE;
                 _solver->setOptions(options);
-                int nWSR = 500;
+                int nWSR = 1000;
                 // qpOASES uses row-major storing
                 // check if values are passed correctly
 
@@ -210,6 +216,7 @@ namespace icub {
                 Eigen::VectorXd x(_dim);
                 _solver->getPrimalSolution(x.data());
                 std::cout << x.transpose() << std::endl;
+                // std::cout << _solver->getObjVal() << std::endl;
                 // std::cout << "acc: " << x.head(38).transpose() << std::endl;
                 // std::cout << "tau: " << x.segment(38 + 6, 32).transpose() << std::endl;
                 // std::cout << "F: " << x.tail(x.size() - (38 + 6 + 32)).transpose() << std::endl;

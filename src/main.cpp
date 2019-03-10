@@ -15,19 +15,27 @@
 int main()
 {
     // std::vector<std::pair<std::string, std::string>> packages = {{"iiwa_description", std::string(RESPATH) + "/iiwa/"}};
-    // auto iiwa = std::make_shared<robot_dart::Robot>(std::string(RESPATH) + "/iiwa/iiwa14.urdf", packages);
+    // auto arm = std::make_shared<robot_dart::Robot>(std::string(RESPATH) + "/iiwa/iiwa14.urdf", packages);
+    // // auto arm = std::make_shared<robot_dart::Robot>(std::string(RESPATH) + "/arm.urdf");
+    // arm->fix_to_world();
 
-    // icub::solver::QPSolver qp(iiwa);
-    // qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(iiwa->skeleton(), "iiwa_link_ee", Eigen::VectorXd::Zero(6)));
-    // qp.add_constraint(icub::constraint::create_constraint<icub::constraint::DynamicsConstraint>(iiwa->skeleton(), false));
+    // icub::solver::QPSolver qp(arm);
+    // // qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(arm->skeleton(), "arm_link_5", Eigen::VectorXd::Zero(6)), 20.);
+    // qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(arm->skeleton(), "iiwa_link_ee", Eigen::VectorXd::Zero(6)), 20.);
+    // qp.add_task(icub::task::create_task<icub::task::DirectTrackingTask>(arm->skeleton(), Eigen::VectorXd::Zero(arm->skeleton()->getNumDofs() * 2)));
+    // qp.add_constraint(icub::constraint::create_constraint<icub::constraint::DynamicsConstraint>(arm->skeleton(), false));
     // qp.solve();
-    std::srand(std::time(NULL));
+    // std::srand(std::time(NULL));
     icub::model::iCub icub("MyiCub");
 
     icub::solver::QPSolver qp(icub.robot());
-    qp.add_task(icub::task::create_task<icub::task::COMAccelerationTask>(icub.skeleton(), Eigen::VectorXd::Zero(6)));
-    qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(icub.skeleton(), "r_hand", Eigen::VectorXd::Zero(6)));
-    qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(icub.skeleton(), "l_hand", Eigen::VectorXd::Zero(6)));
+    double task_weight = 10000.;
+    double gen_weight = 0.1;
+    qp.add_task(icub::task::create_task<icub::task::COMAccelerationTask>(icub.skeleton(), Eigen::VectorXd::Zero(6)), task_weight);
+    qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(icub.skeleton(), "r_hand", Eigen::VectorXd::Zero(6)), task_weight);
+    qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(icub.skeleton(), "l_hand", Eigen::VectorXd::Zero(6)), task_weight);
+    // regularization
+    qp.add_task(icub::task::create_task<icub::task::DirectTrackingTask>(icub.skeleton(), Eigen::VectorXd::Zero(icub.skeleton()->getNumDofs() * 2 + 2 * 6)), gen_weight);
     qp.add_constraint(icub::constraint::create_constraint<icub::constraint::DynamicsConstraint>(icub.skeleton()));
     Eigen::VectorXd up(3), t1(3), t2(3);
     up << 0., 0., 1.;
@@ -38,8 +46,8 @@ int main()
     c.normal = up;
     c.t1 = t1;
     c.t2 = t2;
-    qp.add_contact("r_sole", c);
-    qp.add_contact("l_sole", c);
+    qp.add_contact(task_weight, "r_sole", c);
+    qp.add_contact(task_weight, "l_sole", c);
     // qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(icub.skeleton(), "r_sole", Eigen::VectorXd::Zero(6)));
     // qp.add_task(icub::task::create_task<icub::task::AccelerationTask>(icub.skeleton(), "l_sole", Eigen::VectorXd::Zero(6)));
     // qp.solve(Eigen::VectorXd::Zero(5 * 6));
