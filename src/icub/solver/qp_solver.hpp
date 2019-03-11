@@ -63,7 +63,7 @@ namespace icub {
             std::vector<std::unique_ptr<constraint::AbstractConstraint>>& constraints() { return _constraints; }
 
         protected:
-            std::unique_ptr<qpOASES::QProblem> _solver = nullptr;
+            std::unique_ptr<qpOASES::SQProblem> _solver = nullptr;
             std::shared_ptr<robot_dart::Robot> _robot;
             std::vector<std::unique_ptr<task::AbstractTask>> _tasks;
             std::vector<double> _task_weights;
@@ -155,15 +155,28 @@ namespace icub {
 
             void _solve()
             {
-                if (!_solver)
-                    _solver = std::unique_ptr<qpOASES::QProblem>(new qpOASES::QProblem(_dim, _num_constraints));
+                bool first = false;
+                if (!_solver) {
+                    _solver = std::unique_ptr<qpOASES::SQProblem>(new qpOASES::SQProblem(_dim, _num_constraints));
+                    first = true;
+                }
 
+                // TO-DO: Set this options from outside
                 auto options = _solver->getOptions();
                 options.printLevel = qpOASES::PL_LOW;
                 // options.enableFarBounds = qpOASES::BT_TRUE;
                 // options.enableFlippingBounds = qpOASES::BT_TRUE;
+                options.enableRamping = qpOASES::BT_FALSE;
+                options.enableNZCTests = qpOASES::BT_FALSE;
+                options.enableDriftCorrection = 0;
+                options.terminationTolerance = 1e-6;
+                options.boundTolerance = 1e-4;
+                options.epsIterRef = 1e-6;
+
                 _solver->setOptions(options);
+                // options.print();
                 int nWSR = 1000;
+                double max_time = 0.005;
 
                 // qpOASES uses row-major storing
                 qpOASES::real_t* H = new qpOASES::real_t[_dim * _dim];
@@ -197,7 +210,13 @@ namespace icub {
                     ubA[i] = _ubA(i);
                 }
 
-                _solver->init(H, g, A, lb, ub, lbA, ubA, nWSR);
+                qpOASES::SymDenseMat H_mat(_H.rows(), _H.cols(), _H.cols(), H);
+                qpOASES::SparseMatrix A_mat(_A.rows(), _A.cols(), _A.cols(), A);
+
+                if (first)
+                    _solver->init(&H_mat, g, &A_mat, lb, ub, lbA, ubA, nWSR);
+                else
+                    _solver->hotstart(&H_mat, g, &A_mat, lb, ub, lbA, ubA, nWSR, &max_time);
 
                 delete[] H;
                 delete[] A;

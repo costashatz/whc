@@ -113,7 +113,7 @@ def build(bld):
                 install_path = None,
                 source = qp_srcs,
                 includes = './external/qpOASES/include',
-                cxxflags = cxxflags,
+                cxxflags = cxxflags + ['-DLINUX'],
                 target = 'qpoases')
 
     bld.program(features = 'cxx',
