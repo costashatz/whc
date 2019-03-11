@@ -41,6 +41,8 @@ namespace icub {
             Eigen::VectorXd t1, t2; // orthonomal basis for contact
             double mu;
             double min_force, max_force;
+            double d_y_min, d_y_max, d_x_min, d_x_max;
+            bool calculate_torque = false;
             Eigen::VectorXd min, max; // 6D vectors for lower and upper bounds
         };
 

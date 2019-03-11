@@ -100,11 +100,11 @@ public:
         double gen_weight = 0.1;
 
         // _solver->add_task(icub::task::create_task<icub::task::COMAccelerationTask>(robot->skeleton(), desired_acc), task_weight);
-        // // _solver->add_task(icub::task::create_task<icub::task::AccelerationTask>(robot->skeleton(), "head", Eigen::VectorXd::Zero(6)), task_weight);
+        // // _solver->add_task(icub::task::create_task<icub::task::AccelerationTask>(robot->skeleton(), "imu_frame", Eigen::VectorXd::Zero(6)), task_weight);
         // _solver->add_task(icub::task::create_task<icub::task::AccelerationTask>(robot->skeleton(), "r_hand", desired_acc_rhand), task_weight);
         // // _solver->add_task(icub::task::create_task<icub::task::AccelerationTask>(robot->skeleton(), "l_hand", Eigen::VectorXd::Zero(6)), task_weight);
         _solver->add_task(icub::task::create_task<icub::task::COMAccelerationTask>(robot->skeleton(), Eigen::VectorXd::Zero(6)), task_weight);
-        _solver->add_task(icub::task::create_task<icub::task::AccelerationTask>(robot->skeleton(), "head", Eigen::VectorXd::Zero(6)), task_weight);
+        _solver->add_task(icub::task::create_task<icub::task::AccelerationTask>(robot->skeleton(), "imu_frame", Eigen::VectorXd::Zero(6)), task_weight);
         _solver->add_task(icub::task::create_task<icub::task::AccelerationTask>(robot->skeleton(), "r_hand", Eigen::VectorXd::Zero(6)), task_weight);
         _solver->add_task(icub::task::create_task<icub::task::AccelerationTask>(robot->skeleton(), "l_hand", Eigen::VectorXd::Zero(6)), task_weight);
         // regularization
@@ -125,6 +125,19 @@ public:
         c.min = Eigen::VectorXd::Zero(6);
         c.max = Eigen::VectorXd::Zero(6);
         c.max.tail(3) << c.max_force, c.max_force, c.max_force;
+        double foot_size_x = 0.16;
+        double foot_size_y = 0.072;
+        double rsole_x = 0.0214502260596;
+        double max_torque = 100.;
+        c.calculate_torque = false;
+        if (c.calculate_torque) {
+            c.min.head(3) << -max_torque, -max_torque, -max_torque;
+            c.max.head(3) << max_torque, max_torque, max_torque;
+        }
+        c.d_y_min = -foot_size_y / 2. + 0.02;
+        c.d_y_max = foot_size_y / 2. - 0.02;
+        c.d_x_min = -rsole_x + 0.02;
+        c.d_x_max = foot_size_x - rsole_x - 0.02;
 
         _solver->add_contact(task_weight, "r_sole", c);
         _solver->add_contact(task_weight, "l_sole", c);
@@ -140,6 +153,8 @@ public:
         // std::cout << "    " << robot->skeleton()->getCoriolisAndGravityForces().tail(_control_dof).transpose() << std::endl;
         // std::cout << std::endl;
         // commands = robot->skeleton()->getCoriolisAndGravityForces().tail(_control_dof);
+        // std::cout << _solver->solution().transpose() << std::endl;
+        // std::cin.get();
         return commands;
         // return robot->skeleton()->getCoriolisAndGravityForces();
     }
