@@ -62,6 +62,8 @@ namespace icub {
             std::vector<std::unique_ptr<constraint::ContactConstraint>>& contacts() { return _contact_constraints; }
             std::vector<std::unique_ptr<constraint::AbstractConstraint>>& constraints() { return _constraints; }
 
+            Eigen::VectorXd solution() const { return _solution; }
+
         protected:
             std::unique_ptr<qpOASES::SQProblem> _solver = nullptr;
             std::shared_ptr<robot_dart::Robot> _robot;
@@ -74,6 +76,8 @@ namespace icub {
             size_t _dim, _num_constraints;
             Eigen::MatrixXd _H, _A;
             Eigen::VectorXd _g, _ub, _lb, _ubA, _lbA;
+            // QP solution
+            Eigen::VectorXd _solution;
 
             void _setup_matrices()
             {
@@ -226,9 +230,9 @@ namespace icub {
                 delete[] lbA;
                 delete[] ubA;
 
-                Eigen::VectorXd x(_dim);
-                _solver->getPrimalSolution(x.data());
-                std::cout << x.transpose() << std::endl;
+                _solution = Eigen::VectorXd(_dim);
+                _solver->getPrimalSolution(_solution.data());
+                // std::cout << x.transpose() << std::endl;
                 // std::cout << _solver->getObjVal() << std::endl;
                 // std::cout << "acc: " << x.head(38).transpose() << std::endl;
                 // std::cout << "tau: " << x.segment(38 + 6, 32).transpose() << std::endl;

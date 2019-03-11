@@ -80,6 +80,10 @@ namespace icub {
                     if (bd->getMass() == 1. && dummy_obj) {
                         bd->setMass(1e-8);
                     }
+                    else if (bd->getMass() == 0.) {
+                        bd->setMass(1e-8);
+                        bd->setMomentOfInertia(1., 1., 1., 0., 0., 0.);
+                    }
                 }
             }
 
