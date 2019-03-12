@@ -117,6 +117,7 @@ public:
         t2 << 0., 1., 0.;
         icub::constraint::Contact c;
         c.mu = 1.;
+        c.muR = 1.;
         c.normal = up;
         c.t1 = t1;
         c.t2 = t2;
@@ -129,7 +130,7 @@ public:
         double foot_size_y = 0.072;
         double rsole_x = 0.0214502260596;
         double max_torque = 100.;
-        c.calculate_torque = false;
+        c.calculate_torque = true;
         if (c.calculate_torque) {
             c.min.head(3) << -max_torque, -max_torque, -max_torque;
             c.max.head(3) << max_torque, max_torque, max_torque;
