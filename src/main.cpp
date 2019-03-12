@@ -1,4 +1,5 @@
 #include <iostream>
+#include <robot_dart/control/pd_control.hpp>
 #include <robot_dart/control/robot_control.hpp>
 #include <robot_dart/robot_dart_simu.hpp>
 
@@ -9,6 +10,7 @@
 #include <robot_dart/graphics/graphics.hpp>
 #endif
 
+#include <dart/collision/CollisionObject.hpp>
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #include <dart/constraint/ConstraintSolver.hpp>
 
@@ -95,16 +97,16 @@ public:
 
         _solver->clear_all();
         Eigen::VectorXd target = Eigen::VectorXd::Zero(robot->skeleton()->getNumDofs() * 2 + 2 * 6);
-        target.segment(robot->skeleton()->getNumDofs(), robot->skeleton()->getNumDofs()).tail(_control_dof) = robot->skeleton()->getCoriolisAndGravityForces().tail(_control_dof);
+        // target.segment(robot->skeleton()->getNumDofs(), robot->skeleton()->getNumDofs()).tail(_control_dof) = robot->skeleton()->getCoriolisAndGravityForces().tail(_control_dof);
         double task_weight = 10000.;
         double gen_weight = 0.1;
 
         // _solver->add_task(icub::task::create_task<icub::task::COMAccelerationTask>(robot->skeleton(), desired_acc), task_weight);
-        // // _solver->add_task(icub::task::create_task<icub::task::AccelerationTask>(robot->skeleton(), "head", Eigen::VectorXd::Zero(6)), task_weight);
+        // // _solver->add_task(icub::task::create_task<icub::task::AccelerationTask>(robot->skeleton(), "imu_frame", Eigen::VectorXd::Zero(6)), task_weight);
         // _solver->add_task(icub::task::create_task<icub::task::AccelerationTask>(robot->skeleton(), "r_hand", desired_acc_rhand), task_weight);
         // // _solver->add_task(icub::task::create_task<icub::task::AccelerationTask>(robot->skeleton(), "l_hand", Eigen::VectorXd::Zero(6)), task_weight);
         _solver->add_task(icub::task::create_task<icub::task::COMAccelerationTask>(robot->skeleton(), Eigen::VectorXd::Zero(6)), task_weight);
-        _solver->add_task(icub::task::create_task<icub::task::AccelerationTask>(robot->skeleton(), "head", Eigen::VectorXd::Zero(6)), task_weight);
+        _solver->add_task(icub::task::create_task<icub::task::AccelerationTask>(robot->skeleton(), "imu_frame", Eigen::VectorXd::Zero(6)), task_weight);
         _solver->add_task(icub::task::create_task<icub::task::AccelerationTask>(robot->skeleton(), "r_hand", Eigen::VectorXd::Zero(6)), task_weight);
         _solver->add_task(icub::task::create_task<icub::task::AccelerationTask>(robot->skeleton(), "l_hand", Eigen::VectorXd::Zero(6)), task_weight);
         // regularization
@@ -117,6 +119,7 @@ public:
         t2 << 0., 1., 0.;
         icub::constraint::Contact c;
         c.mu = 1.;
+        c.muR = 1.;
         c.normal = up;
         c.t1 = t1;
         c.t2 = t2;
@@ -125,6 +128,19 @@ public:
         c.min = Eigen::VectorXd::Zero(6);
         c.max = Eigen::VectorXd::Zero(6);
         c.max.tail(3) << c.max_force, c.max_force, c.max_force;
+        double foot_size_x = 0.16;
+        double foot_size_y = 0.072;
+        double rsole_x = 0.0214502260596;
+        double max_torque = 100.;
+        c.calculate_torque = true;
+        if (c.calculate_torque) {
+            c.min.head(3) << -max_torque, -max_torque, -max_torque;
+            c.max.head(3) << max_torque, max_torque, max_torque;
+        }
+        c.d_y_min = -foot_size_y / 2. + 0.02;
+        c.d_y_max = foot_size_y / 2. - 0.02;
+        c.d_x_min = -rsole_x + 0.02;
+        c.d_x_max = foot_size_x - rsole_x - 0.02;
 
         _solver->add_contact(task_weight, "r_sole", c);
         _solver->add_contact(task_weight, "l_sole", c);
@@ -140,6 +156,8 @@ public:
         // std::cout << "    " << robot->skeleton()->getCoriolisAndGravityForces().tail(_control_dof).transpose() << std::endl;
         // std::cout << std::endl;
         // commands = robot->skeleton()->getCoriolisAndGravityForces().tail(_control_dof);
+        // std::cout << _solver->solution().transpose() << std::endl;
+        // std::cin.get();
         return commands;
         // return robot->skeleton()->getCoriolisAndGravityForces();
     }
@@ -173,10 +191,20 @@ int main()
 
     // arm->add_controller(std::make_shared<QPControl>());
     auto icub_robot = icub.robot();
-    icub_robot->set_position_enforced(true);
+    icub_robot->set_position_enforced(false);
+    icub_robot->skeleton()->disableSelfCollisionCheck();
     icub_robot->skeleton()->setPosition(5, 0.625);
-    // icub_robot->skeleton()->disableSelfCollision();
-    icub_robot->add_controller(std::make_shared<QPControl>());
+    for (size_t i = 6; i < icub_robot->skeleton()->getNumDofs(); i++) {
+        icub_robot->skeleton()->getDof(i)->getJoint()->setDampingCoefficient(0, 0.);
+        icub_robot->skeleton()->getDof(i)->getJoint()->setCoulombFriction(0, 0.);
+        //     icub_robot->skeleton()->getDof(i)->getJoint()->setActuatorType(dart::dynamics::Joint::SERVO);
+        // std::cout << icub_robot->skeleton()->getDof(i)->getJoint()->getName() << std::endl;
+    }
+    // Eigen::VectorXd target = icub_robot->skeleton()->getPositions().tail(icub_robot->skeleton()->getNumDofs() - 6);
+    // std::vector<double> ctrl(target.size());
+    // Eigen::VectorXd::Map(ctrl.data(), ctrl.size()) = target;
+    // icub_robot->add_controller(std::make_shared<robot_dart::control::PDControl>(ctrl));
+    // std::static_pointer_cast<robot_dart::control::PDControl>(icub_robot->controllers()[0])->set_pd(1000., 1.);
 
     // std::cout << icub_robot->skeleton()->getPositions().head(6).transpose() << std::endl;
     // Eigen::Isometry3d tr_rhand = icub_robot->skeleton()->getBodyNode("r_hand")->getWorldTransform();
@@ -184,6 +212,7 @@ int main()
     // actual_rhand.tail(3) = tr_rhand.translation();
     // actual_rhand.head(3) = dart::math::quatToExp(Eigen::Quaterniond(tr_rhand.linear()));
     // std::cout << actual_rhand.transpose() << std::endl;
+    icub_robot->add_controller(std::make_shared<QPControl>());
 
     Eigen::VectorXd lb, ub;
     lb = icub_robot->skeleton()->getForceLowerLimits();
@@ -213,7 +242,64 @@ int main()
 #endif
     simu.add_robot(icub_robot);
     simu.add_floor();
-    simu.run(10.);
+    simu.run(20.);
+    // // std::cout << "torques: " << icub_robot->skeleton()->getForces().transpose() << std::endl;
+    // // std::cout << "cg: " << icub_robot->skeleton()->getCoriolisAndGravityForces().transpose() << std::endl;
+    // Eigen::MatrixXd M = icub_robot->skeleton()->getMassMatrix();
+    // Eigen::VectorXd torques = icub_robot->skeleton()->getForces();
+    // Eigen::VectorXd Cg = icub_robot->skeleton()->getCoriolisAndGravityForces();
+    // // Cg.head(6) = Eigen::VectorXd::Zero(6);
+    // Eigen::VectorXd acc = icub_robot->skeleton()->getAccelerations();
+    // std::vector<Eigen::MatrixXd> jacobians;
+    // std::vector<Eigen::VectorXd> forces;
+    // const dart::collision::CollisionResult& col_res = simu.world()->getLastCollisionResult();
+    // for (size_t i = 0; i < col_res.getNumContacts(); i++) {
+    //     auto c = col_res.getContact(i);
+    //     // std::cout << c.point.transpose() << std::endl;
+    //     // collisionObject1
+    //     // std::cout << c.collisionObject1->getShapeFrame()->getName() << " vs " << c.collisionObject2->getShapeFrame()->getName() << std::endl;
+    //     // std::cout << c.point.transpose() << std::endl;
+    //     // std::cout << c.force.transpose() << std::endl;
+    //     Eigen::VectorXd r_foot = icub_robot->skeleton()->getBodyNode("r_sole")->getTransform().translation();
+    //     Eigen::VectorXd l_foot = icub_robot->skeleton()->getBodyNode("l_sole")->getTransform().translation();
+    //     Eigen::VectorXd force = Eigen::VectorXd::Zero(6);
+    //     force.tail(3) = c.force;
+
+    //     forces.push_back(force);
+    //     if (c.collisionObject1->getShapeFrame()->getName().substr(0, 6) == "r_foot") {
+    //         Eigen::VectorXd p = c.point - r_foot;
+    //         // std::cout << "jac: " << icub_robot->skeleton()->getWorldJacobian(icub_robot->skeleton()->getBodyNode("r_foot"), p) << std::endl;
+    //         jacobians.push_back(icub_robot->skeleton()->getWorldJacobian(icub_robot->skeleton()->getBodyNode("r_sole"), -p));
+    //     }
+    //     else {
+    //         Eigen::VectorXd p = c.point - l_foot;
+    //         // std::cout << "jac: " << icub_robot->skeleton()->getWorldJacobian(icub_robot->skeleton()->getBodyNode("l_foot"), p) << std::endl;
+    //         jacobians.push_back(icub_robot->skeleton()->getWorldJacobian(icub_robot->skeleton()->getBodyNode("l_sole"), -p));
+    //     }
+    //     // std::cout << "jac: " << icub_robot->skeleton()->getWorldJacobian(c.point) << std::endl;
+    // }
+    // // std::cout << "acc: " << acc.transpose() << std::endl;
+
+    // Eigen::VectorXd res1 = M * acc + Cg - torques;
+    // Eigen::MatrixXd mat = Eigen::MatrixXd::Zero(jacobians.size() * 6, icub_robot->skeleton()->getNumDofs());
+    // Eigen::VectorXd F(jacobians.size() * 6);
+    // for (size_t i = 0; i < jacobians.size(); i++) {
+    //     mat.block(i * 6, 0, jacobians[i].rows(), jacobians[i].cols()) = jacobians[i];
+    //     F.segment(i * 6, 6) = forces[i].transpose();
+    // }
+    // // std::cout << mat << std::endl
+    // //           << std::endl
+    // //           << std::endl;
+    // Eigen::VectorXd res2 = mat.transpose() * F;
+
+    // std::cout << (res1 - res2).norm() << std::endl;
+    // // std::cout << res1.transpose() << std::endl
+    // //           << std::endl;
+    // // std::cout << res2.transpose() << std::endl;
+    // for (size_t i = 0; i < icub_robot->skeleton()->getNumDofs(); i++) {
+    //     std::cout << icub_robot->skeleton()->getDof(i)->getJoint()->getName() << ": ";
+    //     std::cout << res1(i) << " " << res2(i) << std::endl;
+    // }
 
     // std::cout << icub_robot->skeleton()->getPositions().head(6).transpose() << std::endl;
 
