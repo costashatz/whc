@@ -11,11 +11,33 @@ namespace whc {
             using EigenQPSolver = ::EigenQP::QPIneqSolver<double, -1, -1>;
 
             size_t dim = g.size();
-            size_t num_constraints = A.rows();
+            size_t num_constraints = 2 * A.rows() + 2 * dim; // 2 * num of constraints + 2 * bounds
             EigenQPSolver qp_solver(dim, num_constraints);
 
             _solution.resize(dim);
-            // qp_solver.solve(H, g, A, _solution);
+            // EigenQP solves x^T*Qx + c^Tx
+            // s.t. Ax <= b
+            // H and g are already in format
+            // we need to transform simple bounds to format
+            Eigen::MatrixXd A_qp = Eigen::MatrixXd::Zero(num_constraints, dim);
+            Eigen::VectorXd b_qp = Eigen::VectorXd::Zero(num_constraints);
+            for (size_t i = 0; i < dim; i++) {
+                // upper bounds
+                A_qp(i, i) = 1.;
+                b_qp(i) = ub(i);
+                // lower bounds
+                A_qp(2 * i, i) = -1.;
+                b_qp(2 * i) = -lb(i);
+            }
+            // upper bounds
+            A_qp.block(2 * dim, 0, A.rows(), A.cols()) = A;
+            b_qp.segment(2 * dim, ubA.size()) = ubA.transpose();
+            // lower bounds
+            A_qp.block(2 * dim + A.rows(), 0, A.rows(), A.cols()) = -A;
+            b_qp.segment(2 * dim + ubA.size(), lbA.size()) = -lbA.transpose();
+
+            // solve the QP
+            qp_solver.solve(H, g, A_qp, b_qp, _solution);
         }
 
         Eigen::VectorXd EigenQP::get_solution() const

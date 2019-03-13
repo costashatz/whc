@@ -1,8 +1,8 @@
 /*
     EigenQP: Fast quadradic programming template library based on Eigen.
- 
+
     From https://github.com/jarredbarber/eigen-QP
- 
+
     MIT License
 
     Copyright (c) 2017 Jarred Barber
@@ -58,7 +58,7 @@ private:
     const int n;
     const int m;
 
-    static constexpr int NWork = 
+    static constexpr int NWork =
            ((NVars == -1) || (NEq == -1)) ? -1 : (NVars+NEq);
     Eigen::Matrix<Scalar,NWork,NWork> Z;
     Eigen::Matrix<Scalar,NWork,1> C;
@@ -69,8 +69,8 @@ public:
         {
             Z.block(n,n,m,m).setZero();
         }
-    void solve(Eigen::Matrix<Scalar,NVars,NVars> &Q, Eigen::Matrix<Scalar,NVars,1> &c, 
-              Eigen::Matrix<Scalar,NEq,NVars> &A, Eigen::Matrix<Scalar,NEq,1> &b,
+    void solve(const Eigen::Matrix<Scalar,NVars,NVars> &Q, const Eigen::Matrix<Scalar,NVars,1> &c,
+              const Eigen::Matrix<Scalar,NEq,NVars> &A, const Eigen::Matrix<Scalar,NEq,1> &b,
               Eigen::Matrix<Scalar,NVars,1> &x)
     {
         Z.block(0,0,n,n) = Q;
@@ -97,7 +97,7 @@ private:
     // Problem size
     const int n;
     const int m;
-    
+
     // Work buffers
     DVec s;
     DVec z;
@@ -111,7 +111,7 @@ private:
     DVec dz;
 
     PVec x;
-    
+
 public:
     // Parameters
     Scalar tolerance;
@@ -132,8 +132,8 @@ public:
 
     ~QPIneqSolver() {}
 
-    void solve(Eigen::Matrix<Scalar,NVars,NVars> &Q, Eigen::Matrix<Scalar,NVars,1> &c, 
-              Eigen::Matrix<Scalar,NIneq,NVars> &A, Eigen::Matrix<Scalar,NIneq,1> &b,
+    void solve(const Eigen::Matrix<Scalar,NVars,NVars> &Q, const Eigen::Matrix<Scalar,NVars,1> &c,
+              const Eigen::Matrix<Scalar,NIneq,NVars> &A, const Eigen::Matrix<Scalar,NIneq,1> &b,
               Eigen::Matrix<Scalar,NVars,1> &x_out)
     {
         const Scalar eta(0.95);
@@ -159,7 +159,7 @@ public:
             Eigen::LLT<PMat> Gbar = (Q + A.adjoint()*((z.array()/s.array()).matrix().asDiagonal())*A).llt();
 
             for (int ii=0; ii < 2; ii++)
-            {   
+            {
                 // Prediction/correction step
                 {
                     auto tmp = (rs.array() - z.array()*rp.array())/s.array();
@@ -168,7 +168,7 @@ public:
                     dz.array() = -(rs.array() - z.array()*ds.array())/s.array();
                 }
 
-                // Compute alph,mu 
+                // Compute alph,mu
                 alpha = 1.0;
                 for (int jj=0; jj < m; jj++)
                 {
@@ -181,7 +181,7 @@ public:
                 if (ii)
                     break; // Don't need to compute any more
 
-                // Centering    
+                // Centering
                 Scalar mu_aff = (s + alpha*ds).dot(z+alpha*dz)*ms;
                 Scalar sigma  = (mu_aff/mu); sigma *= sigma*sigma;
 
@@ -203,8 +203,8 @@ public:
             mu = s.dot(z)*ms;
 
             // Convergence test
-            if ( (mu < eps) && 
-                 (rd.norm() < eps) && 
+            if ( (mu < eps) &&
+                 (rd.norm() < eps) &&
                  (rs.norm() < eps) )
             {
                 break;
@@ -225,7 +225,7 @@ template<typename Scalar, int NVars=-1, int NEq=-1, int NIneq=-1>
 class QPGenSolver
 {
     // Static size for work matrix.
-    static constexpr int NWork = 
+    static constexpr int NWork =
         ((NVars == -1) || (NEq == -1) || (NIneq==-1)) ? -1 : (NVars+NEq+2*NIneq);
     typedef Eigen::Matrix<Scalar,NVars,1> PVec;
     typedef Eigen::Matrix<Scalar,NIneq,1> DVec; // Dual (i.e., Lagrange multiplier) vector
@@ -242,7 +242,7 @@ private:
     // Work buffers
     DVec s;
     DVec z;
-    EVec y; 
+    EVec y;
 
     PVec rd;
     DVec rp;
@@ -256,9 +256,9 @@ private:
 
     WorkBuf augSystem;
 public:
-    QPGenSolver(int n_vars=NVars, int n_const_eq=NEq, int n_const_ineq=NIneq) 
-        : n(n_vars),mi(n_const_ineq),me(n_const_eq), 
-          s(mi), z(mi), y(me), rd(n), rp(mi), rs(mi), 
+    QPGenSolver(int n_vars=NVars, int n_const_eq=NEq, int n_const_ineq=NIneq)
+        : n(n_vars),mi(n_const_ineq),me(n_const_eq),
+          s(mi), z(mi), y(me), rd(n), rp(mi), rs(mi),
           ry(me), dx(n), ds(mi), dz(mi), dy(me),
           augSystem(2*mi+me+n,2*mi+me+n)
         {
@@ -266,18 +266,18 @@ public:
 
     ~QPGenSolver() {}
 
-    void solve(Eigen::Matrix<Scalar,NVars,NVars> &Q, Eigen::Matrix<Scalar,NVars,1> &c, 
+    void solve(Eigen::Matrix<Scalar,NVars,NVars> &Q, Eigen::Matrix<Scalar,NVars,1> &c,
               Eigen::Matrix<Scalar,NIneq,NVars> &A, Eigen::Matrix<Scalar,NIneq,1> &b,
               Eigen::Matrix<Scalar,NEq,NVars> &E, Eigen::Matrix<Scalar,NEq,1> &f,
               Eigen::Matrix<Scalar,NVars,1> &x)
     {
-       
+
     }
 };
 #endif
 
 template<typename Scalar, int NVars, int NIneq>
-void quadprog(Eigen::Matrix<Scalar,NVars,NVars> &Q, Eigen::Matrix<Scalar,NVars,1> &c, 
+void quadprog(Eigen::Matrix<Scalar,NVars,NVars> &Q, Eigen::Matrix<Scalar,NVars,1> &c,
               Eigen::Matrix<Scalar,NIneq,NVars> &A, Eigen::Matrix<Scalar,NIneq,1> &b,
               Eigen::Matrix<Scalar,NVars,1> &x)
 {
