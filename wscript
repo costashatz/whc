@@ -103,7 +103,7 @@ def build(bld):
 
     # build qpOASES
     qp_files = []
-    for root, dirnames, filenames in os.walk(bld.path.abspath()+'/external/qpOASES/src/'):
+    for root, dirnames, filenames in os.walk(bld.path.abspath()+'/src/external/qpOASES/src/'):
         for filename in fnmatch.filter(filenames, '*.cpp'):
             qp_files.append(os.path.join(root, filename))
 
@@ -113,14 +113,14 @@ def build(bld):
     bld.program(features = 'cxx cxxstlib',
                 install_path = None,
                 source = qp_srcs,
-                includes = './external/qpOASES/include',
+                includes = './src/external/qpOASES/include',
                 cxxflags = cxxflags + ['-DLINUX'],
                 target = 'qpoases')
 
     bld.program(features = 'cxx cxxstlib',
                 install_path = None,
                 source = whc_srcs,
-                includes = './src ./external/qpOASES/include',
+                includes = './src ./src/external/qpOASES/include',
                 uselib = libs,
                 use = 'qpoases',
                 cxxflags = cxxflags,
