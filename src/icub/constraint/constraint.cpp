@@ -176,5 +176,36 @@ namespace icub {
         {
             return "contact";
         }
+
+        JointLimitsConstraint::JointLimitsConstraint(const dart::dynamics::SkeletonPtr& skeleton) : _skeleton(skeleton) {}
+
+        std::pair<Eigen::MatrixXd, Eigen::MatrixXd> JointLimitsConstraint::data(solver::QPSolver& solver, size_t index)
+        {
+            size_t dofs = _skeleton->getNumDofs();
+            double dt = _skeleton->getTimeStep();
+            Eigen::VectorXd dq = _skeleton->getVelocities();
+            Eigen::VectorXd q = _skeleton->getPositions();
+
+            Eigen::MatrixXd A = Eigen::MatrixXd::Zero(dofs, solver.dim());
+            A.diagonal().head(dofs) = Eigen::VectorXd::Constant(dofs, dt * dt);
+
+            Eigen::MatrixXd bounds = Eigen::MatrixXd::Zero(2, dofs);
+            bounds.row(0) = _skeleton->getPositionLowerLimits().transpose();
+            bounds.row(0) -= (dq * dt + q).transpose();
+            bounds.row(1) = _skeleton->getPositionUpperLimits().transpose();
+            bounds.row(1) -= (dq * dt + q).transpose();
+
+            return std::make_pair(A, bounds);
+        }
+
+        size_t JointLimitsConstraint::N() const
+        {
+            return _skeleton->getNumDofs();
+        }
+
+        std::string JointLimitsConstraint::get_type() const
+        {
+            return "joint_limits";
+        }
     } // namespace constraint
 } // namespace icub

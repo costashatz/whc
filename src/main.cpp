@@ -97,7 +97,7 @@ public:
 
         _solver->clear_all();
         Eigen::VectorXd target = Eigen::VectorXd::Zero(robot->skeleton()->getNumDofs() * 2 + 2 * 6);
-        // target.segment(robot->skeleton()->getNumDofs(), robot->skeleton()->getNumDofs()).tail(_control_dof) = robot->skeleton()->getCoriolisAndGravityForces().tail(_control_dof);
+        target.segment(robot->skeleton()->getNumDofs(), robot->skeleton()->getNumDofs()).tail(_control_dof) = robot->skeleton()->getCoriolisAndGravityForces().tail(_control_dof);
         double task_weight = 10000.;
         double gen_weight = 0.1;
 
@@ -113,6 +113,8 @@ public:
         _solver->add_task(icub::task::create_task<icub::task::DirectTrackingTask>(robot->skeleton(), target), gen_weight);
         _solver->add_constraint(icub::constraint::create_constraint<icub::constraint::DynamicsConstraint>(robot->skeleton()));
         // _solver->add_task(icub::task::create_task<icub::task::TauDiffTask>(robot->skeleton(), _prev_tau), gen_weight);
+
+        _solver->add_constraint(icub::constraint::create_constraint<icub::constraint::JointLimitsConstraint>(robot->skeleton()));
         Eigen::VectorXd up(3), t1(3), t2(3);
         up << 0., 0., 1.;
         t1 << 1., 0., 0.;

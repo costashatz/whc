@@ -63,6 +63,19 @@ namespace icub {
             std::string _body_name;
             Contact _contact;
         };
+
+        class JointLimitsConstraint : public AbstractConstraint {
+        public:
+            JointLimitsConstraint(const dart::dynamics::SkeletonPtr& skeleton);
+
+            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::QPSolver& solver, size_t index = 0);
+
+            size_t N() const;
+            std::string get_type() const;
+
+        protected:
+            dart::dynamics::SkeletonPtr _skeleton;
+        };
     } // namespace constraint
 } // namespace icub
 
