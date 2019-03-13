@@ -21,6 +21,7 @@ namespace whc {
 
             void set_robot(const std::shared_ptr<robot_dart::Robot>& robot);
 
+            AbstractQP* get_qp_solver() const;
             template <typename QPSolver, typename... Args>
             void set_qp_solver(Args... args)
             {

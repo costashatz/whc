@@ -6,6 +6,8 @@
 
 namespace whc {
     namespace solver {
+        QPOases::QPOases(double max_time, int max_iters) : _max_time(max_time), _max_iters(max_iters) {}
+
         void QPOases::solve(const Eigen::MatrixXd& H, const Eigen::VectorXd& g, const Eigen::MatrixXd& A, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub, const Eigen::VectorXd& lbA, const Eigen::VectorXd& ubA)
         {
             static std::unique_ptr<qpOASES::SQProblem> qp_solver = nullptr;
@@ -23,7 +25,6 @@ namespace whc {
                 first = true;
             }
 
-            // TO-DO: Set this options from outside
             auto options = qp_solver->getOptions();
             options.printLevel = qpOASES::PL_LOW;
             // options.enableFarBounds = qpOASES::BT_TRUE;
@@ -36,9 +37,9 @@ namespace whc {
             options.epsIterRef = 1e-6;
 
             qp_solver->setOptions(options);
-            // options.print();
-            int nWSR = 1000;
-            double max_time = 0.005;
+            // we need this, because QPOases changes these values
+            double max_time = _max_time;
+            int max_iters = _max_iters;
 
             // qpOASES uses row-major storing
             qpOASES::real_t* H_qp = new qpOASES::real_t[dim * dim];
@@ -76,9 +77,9 @@ namespace whc {
             qpOASES::SparseMatrix A_mat(A.rows(), A.cols(), A.cols(), A_qp);
 
             if (first)
-                qp_solver->init(&H_mat, g_qp, &A_mat, lb_qp, ub_qp, lbA_qp, ubA_qp, nWSR);
+                qp_solver->init(&H_mat, g_qp, &A_mat, lb_qp, ub_qp, lbA_qp, ubA_qp, max_iters);
             else
-                qp_solver->hotstart(&H_mat, g_qp, &A_mat, lb_qp, ub_qp, lbA_qp, ubA_qp, nWSR, &max_time);
+                qp_solver->hotstart(&H_mat, g_qp, &A_mat, lb_qp, ub_qp, lbA_qp, ubA_qp, max_iters, &max_time);
 
             delete[] H_qp;
             delete[] A_qp;
@@ -95,6 +96,26 @@ namespace whc {
         Eigen::VectorXd QPOases::get_solution() const
         {
             return _solution;
+        }
+
+        void QPOases::set_max_time(double max_time)
+        {
+            _max_time = max_time;
+        }
+
+        double QPOases::get_max_time() const
+        {
+            return _max_time;
+        }
+
+        void QPOases::set_max_iters(int max_iters)
+        {
+            _max_iters = max_iters;
+        }
+
+        double QPOases::get_max_iters() const
+        {
+            return _max_iters;
         }
     } // namespace solver
 } // namespace whc

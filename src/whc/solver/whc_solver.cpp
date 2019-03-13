@@ -14,6 +14,11 @@ namespace whc {
             _robot = robot;
         }
 
+        AbstractQP* WhcSolver::get_qp_solver() const
+        {
+            return _solver.get();
+        }
+
         void WhcSolver::clear_all()
         {
             _tasks.clear();
