@@ -20,10 +20,10 @@ namespace whc {
         public:
             DynamicsConstraint(const dart::dynamics::SkeletonPtr& skeleton, bool floating_base = true);
 
-            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver& solver, size_t index = 0);
+            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver& solver, size_t index = 0) override;
 
-            size_t N() const;
-            std::string get_type() const;
+            size_t N() const override;
+            std::string get_type() const override;
 
         protected:
             dart::dynamics::SkeletonPtr _skeleton;
@@ -44,13 +44,13 @@ namespace whc {
         public:
             ContactConstraint(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, const Contact& contact);
 
-            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver& solver, size_t index);
+            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver& solver, size_t index) override;
 
             Eigen::MatrixXd get_jacobian() const;
             Eigen::MatrixXd get_force_limits() const;
 
-            size_t N() const;
-            std::string get_type() const;
+            size_t N() const override;
+            std::string get_type() const override;
 
         protected:
             dart::dynamics::SkeletonPtr _skeleton;
@@ -62,10 +62,10 @@ namespace whc {
         public:
             JointLimitsConstraint(const dart::dynamics::SkeletonPtr& skeleton);
 
-            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver& solver, size_t index = 0);
+            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver& solver, size_t index = 0) override;
 
-            size_t N() const;
-            std::string get_type() const;
+            size_t N() const override;
+            std::string get_type() const override;
 
         protected:
             dart::dynamics::SkeletonPtr _skeleton;
