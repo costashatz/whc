@@ -9,16 +9,19 @@
 #include <dart/dynamics/DegreeOfFreedom.hpp>
 #include <dart/dynamics/EndEffector.hpp>
 #include <dart/dynamics/Joint.hpp>
+#include <dart/dynamics/MeshShape.hpp>
 
 namespace icub {
     namespace model {
         class iCub {
         public:
-            iCub(const std::string& name, const std::string& model = "iCubGazeboV2_5_plus")
+            iCub(const std::string& name, const std::string& model = "iCubNancy01")
             {
                 _robot = std::make_shared<robot_dart::Robot>(std::string(RESPATH) + "/robots/" + model + "/model.urdf", packages(), name);
                 _fix_masses();
                 _create_end_effectors();
+                if (model == "iCubNancy01")
+                    _fix_visuals();
 
                 // std::cout << _r_hand->getWorldJacobian() << std::endl
                 //           << std::endl;
@@ -92,14 +95,6 @@ namespace icub {
                 auto legs = leg_eefs();
                 auto hands = arm_eefs();
 
-                // std::cout << _robot->skeleton()->getBodyNode(hands[0])->getWorldJacobian().rows() << "x" << _robot->skeleton()->getBodyNode(hands[0])->getWorldJacobian().cols() << std::endl;
-                // Eigen::MatrixXd jac = _robot->skeleton()->getWorldJacobian(_robot->skeleton()->getBodyNode(hands[0]));
-                // // std::cout << jac.rows() << "x" << jac.cols() << std::endl;
-                // std::cout << jac << std::endl
-                //           << std::endl;
-                // std::cout << _robot->skeleton()->getBodyNode(hands[0])->getWorldJacobian() << std::endl
-                //           << std::endl;
-
                 _r_hand = _robot->skeleton()->getBodyNode(hands[0])->createEndEffector(hands[0]);
                 _l_hand = _robot->skeleton()->getBodyNode(hands[1])->createEndEffector(hands[1]);
 
@@ -107,6 +102,22 @@ namespace icub {
                 _l_sole = _robot->skeleton()->getBodyNode(legs[1])->createEndEffector(legs[1]);
 
                 _head = _robot->skeleton()->getBodyNode(head_link())->createEndEffector(head_link());
+            }
+
+            void _fix_visuals()
+            {
+                for (size_t i = 0; i < _robot->skeleton()->getNumBodyNodes(); i++) {
+                    auto bd = _robot->skeleton()->getBodyNode(i);
+                    auto shapes = bd->getShapeNodesWith<dart::dynamics::VisualAspect>();
+                    for (size_t j = 0; j < shapes.size(); j++) {
+                        auto node = shapes[j];
+                        auto shape = node->getShape();
+                        if (shape->getType() == "MeshShape") {
+                            auto mesh_shape = std::static_pointer_cast<dart::dynamics::MeshShape>(shape);
+                            mesh_shape->setColorMode(dart::dynamics::MeshShape::ColorMode::MATERIAL_COLOR);
+                        }
+                    }
+                }
             }
         };
     } // namespace model
