@@ -12,7 +12,7 @@ namespace whc {
     namespace icub_example {
         class iCub {
         public:
-            iCub(const std::string& name, const std::string& model = "iCubNancy01")
+            iCub(const std::string& name, const std::string& model = "iCubGazeboV2_5_plus")
             {
                 _robot = std::make_shared<robot_dart::Robot>(std::string(RESPATH) + "/robots/" + model + "/model.urdf", _packages(), name);
                 _fix_masses();

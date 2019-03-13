@@ -1,10 +1,6 @@
 #include <iostream>
-#include <robot_dart/control/pd_control.hpp>
 #include <robot_dart/control/robot_control.hpp>
 #include <robot_dart/robot_dart_simu.hpp>
-
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
-#include <dart/constraint/ConstraintSolver.hpp>
 
 #ifdef GRAPHIC
 #include <robot_dart/graphics/graphics.hpp>
@@ -14,12 +10,10 @@
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #include <dart/constraint/ConstraintSolver.hpp>
 
-#include "iCub.hpp"
-
 #include <whc/solver/qp_oases.hpp>
 #include <whc/solver/whc_solver.hpp>
 
-#include <chrono>
+#include "iCub.hpp"
 
 class QPControl : public robot_dart::control::RobotControl {
 public:
@@ -106,13 +100,15 @@ protected:
 
 int main()
 {
-    whc::icub_example::iCub icub("MyiCub");
+    std::string model = "iCubNancy01";
+    whc::icub_example::iCub icub("MyiCub", model);
 
-    // arm->add_controller(std::make_shared<QPControl>());
     auto icub_robot = icub.robot();
     icub_robot->set_position_enforced(false);
     icub_robot->skeleton()->disableSelfCollisionCheck();
     icub_robot->skeleton()->setPosition(5, 0.625);
+    if (model == "iCubNancy01")
+        icub_robot->skeleton()->setPosition(5, 0.6 + 1e-5);
     for (size_t i = 6; i < icub_robot->skeleton()->getNumDofs(); i++) {
         icub_robot->skeleton()->getDof(i)->getJoint()->setDampingCoefficient(0, 0.);
         icub_robot->skeleton()->getDof(i)->getJoint()->setCoulombFriction(0, 0.);
