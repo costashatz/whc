@@ -1,0 +1,34 @@
+import os
+import fnmatch
+
+def build(bld):
+    path = bld.path.abspath() + '/icub/models'
+
+    cxxflags = bld.get_env()['CXXFLAGS']
+
+    files = []
+    for root, dirnames, filenames in os.walk(bld.path.abspath()+'/icub'):
+        for filename in fnmatch.filter(filenames, '*.cpp'):
+            files.append(os.path.join(root, filename))
+
+    files = [f[len(bld.path.abspath())+1:] for f in files]
+    icub_srcs = " ".join(files)
+
+    bld.program(features = 'cxx',
+                install_path = None,
+                source = icub_srcs,
+                includes = '..',
+                uselib = bld.env['whc_libs'],
+                use = 'whc',
+                cxxflags = cxxflags + ['-DRESPATH="' + path + '"'],
+                target = 'icub_example')
+    if bld.get_env()['BUILD_GRAPHIC'] == True:
+        bld.program(features = 'cxx',
+                    install_path = None,
+                    source = icub_srcs,
+                    includes = '..',
+                    uselib = bld.env['whc_graphic_libs'],
+                    use = 'whc',
+                    cxxflags = cxxflags + ['-DRESPATH="' + path + '"'],
+                    defines = ['GRAPHIC'],
+                    target = 'icub_example_graphic')

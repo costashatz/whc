@@ -85,20 +85,21 @@ def summary(bld):
         bld.fatal("Build failed, because some tests failed!")
 
 def build(bld):
-    path = bld.path.abspath() + '/models'
-
     libs = 'BOOST EIGEN DART ROBOT_DART '
     libs_graphics = libs + ' DART_GRAPHIC'
+
+    bld.env['whc_libs'] = libs
+    bld.env['whc_graphic_libs'] = libs_graphics
 
     cxxflags = bld.get_env()['CXXFLAGS']
 
     files = []
-    for root, dirnames, filenames in os.walk(bld.path.abspath()+'/src/'):
+    for root, dirnames, filenames in os.walk(bld.path.abspath()+'/src/whc'):
         for filename in fnmatch.filter(filenames, '*.cpp'):
             files.append(os.path.join(root, filename))
 
     files = [f[len(bld.path.abspath())+1:] for f in files]
-    icub_srcs = " ".join(files)
+    whc_srcs = " ".join(files)
 
     # build qpOASES
     qp_files = []
@@ -116,23 +117,15 @@ def build(bld):
                 cxxflags = cxxflags + ['-DLINUX'],
                 target = 'qpoases')
 
-    bld.program(features = 'cxx',
+    bld.program(features = 'cxx cxxstlib',
                 install_path = None,
-                source = icub_srcs,
+                source = whc_srcs,
                 includes = './src ./external/qpOASES/include',
                 uselib = libs,
                 use = 'qpoases',
-                cxxflags = cxxflags + ['-DRESPATH="' + path + '"'],
-                target = 'icub')
-    if bld.get_env()['BUILD_GRAPHIC'] == True:
-        bld.program(features = 'cxx',
-                    install_path = None,
-                    source = icub_srcs,
-                    includes = './src ./external/qpOASES/include',
-                    uselib = libs_graphics,
-                    use = 'qpoases',
-                    cxxflags = cxxflags + ['-DRESPATH="' + path + '"'],
-                    defines = ['GRAPHIC'],
-                    target = 'icub_graphic')
+                cxxflags = cxxflags,
+                target = 'whc')
+    
+    bld.recurse('./src/examples')
 
     bld.add_post_fun(summary)

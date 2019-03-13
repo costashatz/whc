@@ -1,22 +1,16 @@
-#ifndef ICUB_CONSTRAINT_CONSTRAINT_HPP
-#define ICUB_CONSTRAINT_CONSTRAINT_HPP
+#ifndef WHC_CONSTRAINT_CONSTRAINT_HPP
+#define WHC_CONSTRAINT_CONSTRAINT_HPP
 
-#include <icub/model/iCub.hpp>
+#include <dart/dynamics/Skeleton.hpp>
 
-namespace icub {
+namespace whc {
     namespace solver {
-        class QPSolver;
+        class WhcSolver;
     }
     namespace constraint {
-        template <typename Constraint, typename... Args>
-        std::unique_ptr<Constraint> create_constraint(Args... args)
-        {
-            return std::unique_ptr<Constraint>(new Constraint(std::forward<Args>(args)...));
-        }
-
         class AbstractConstraint {
         public:
-            virtual std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::QPSolver&, size_t index = 0) = 0;
+            virtual std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver&, size_t index = 0) = 0;
 
             virtual size_t N() const = 0;
             virtual std::string get_type() const = 0;
@@ -26,7 +20,7 @@ namespace icub {
         public:
             DynamicsConstraint(const dart::dynamics::SkeletonPtr& skeleton, bool floating_base = true);
 
-            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::QPSolver& solver, size_t index = 0);
+            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver& solver, size_t index = 0);
 
             size_t N() const;
             std::string get_type() const;
@@ -50,7 +44,7 @@ namespace icub {
         public:
             ContactConstraint(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, const Contact& contact);
 
-            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::QPSolver& solver, size_t index);
+            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver& solver, size_t index);
 
             Eigen::MatrixXd get_jacobian() const;
             Eigen::MatrixXd get_force_limits() const;
@@ -68,7 +62,7 @@ namespace icub {
         public:
             JointLimitsConstraint(const dart::dynamics::SkeletonPtr& skeleton);
 
-            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::QPSolver& solver, size_t index = 0);
+            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver& solver, size_t index = 0);
 
             size_t N() const;
             std::string get_type() const;
@@ -77,6 +71,6 @@ namespace icub {
             dart::dynamics::SkeletonPtr _skeleton;
         };
     } // namespace constraint
-} // namespace icub
+} // namespace whc
 
 #endif

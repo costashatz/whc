@@ -1,12 +1,16 @@
-#include <icub/constraint/constraint.hpp>
-#include <icub/solver/qp_solver.hpp>
+#include <dart/dynamics/BodyNode.hpp>
 
-namespace icub {
+#include <robot_dart/robot.hpp>
+
+#include <whc/constraint/constraint.hpp>
+#include <whc/solver/whc_solver.hpp>
+
+namespace whc {
     namespace constraint {
         DynamicsConstraint::DynamicsConstraint(const dart::dynamics::SkeletonPtr& skeleton, bool floating_base)
             : _skeleton(skeleton), _floating_base(floating_base) {}
 
-        std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DynamicsConstraint::data(solver::QPSolver& solver, size_t)
+        std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DynamicsConstraint::data(solver::WhcSolver& solver, size_t)
         {
             size_t dofs = _skeleton->getNumDofs();
             size_t contacts = solver.contacts().size();
@@ -57,7 +61,7 @@ namespace icub {
         // Caldwell, and C. Semini, “High-slope terrain locomotion
         // for torque-controlled quadruped robots,” Autonomous Robots,
         // vol. 41, no. 1, pp. 259–272, 2017
-        std::pair<Eigen::MatrixXd, Eigen::MatrixXd> ContactConstraint::data(solver::QPSolver& solver, size_t index)
+        std::pair<Eigen::MatrixXd, Eigen::MatrixXd> ContactConstraint::data(solver::WhcSolver& solver, size_t index)
         {
             size_t dofs = _skeleton->getNumDofs();
             size_t dim = solver.dim();
@@ -179,7 +183,7 @@ namespace icub {
 
         JointLimitsConstraint::JointLimitsConstraint(const dart::dynamics::SkeletonPtr& skeleton) : _skeleton(skeleton) {}
 
-        std::pair<Eigen::MatrixXd, Eigen::MatrixXd> JointLimitsConstraint::data(solver::QPSolver& solver, size_t index)
+        std::pair<Eigen::MatrixXd, Eigen::MatrixXd> JointLimitsConstraint::data(solver::WhcSolver& solver, size_t index)
         {
             size_t dofs = _skeleton->getNumDofs();
             double dt = _skeleton->getTimeStep();
@@ -208,4 +212,4 @@ namespace icub {
             return "joint_limits";
         }
     } // namespace constraint
-} // namespace icub
+} // namespace whc
