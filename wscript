@@ -117,12 +117,29 @@ def build(bld):
                 cxxflags = cxxflags + ['-DLINUX'],
                 target = 'qpoases')
 
+    # build cppipm
+    cppipm_files = []
+    for root, dirnames, filenames in os.walk(bld.path.abspath()+'/src/external/cppipm/'):
+        for filename in fnmatch.filter(filenames, '*.cpp'):
+            cppipm_files.append(os.path.join(root, filename))
+
+    cppipm_files = [f[len(bld.path.abspath())+1:] for f in cppipm_files]
+    cppipm_srcs = " ".join(cppipm_files)
+
+    bld.program(features = 'cxx cxxstlib',
+                install_path = None,
+                source = cppipm_srcs,
+                uselib = 'EIGEN',
+                includes = './src/external/cppipm',
+                cxxflags = cxxflags,
+                target = 'cppipm')
+
     bld.program(features = 'cxx cxxstlib',
                 install_path = None,
                 source = whc_srcs,
-                includes = './src ./src/external/qpOASES/include',
+                includes = './src ./src/external/qpOASES/include ./src/external/cppipm',
                 uselib = libs,
-                use = 'qpoases',
+                use = 'qpoases cppipm',
                 cxxflags = cxxflags,
                 target = 'whc')
     
