@@ -31,8 +31,8 @@ namespace whc {
         };
 
         struct Contact {
-            Eigen::VectorXd normal; // pointing towards the robot
-            Eigen::VectorXd t1, t2; // orthonomal basis for contact
+            Eigen::VectorXd nz; // normal of contact - pointing towards the robot
+            Eigen::VectorXd nx, ny; // orthonomal basis for contact
             double mu, muR;
             double min_force, max_force;
             double d_y_min, d_y_max, d_x_min, d_x_max;

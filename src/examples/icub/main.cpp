@@ -55,9 +55,9 @@ public:
         whc::constraint::Contact c;
         c.mu = 1.;
         c.muR = 1.;
-        c.normal = up;
-        c.t1 = t1;
-        c.t2 = t2;
+        c.nz = up;
+        c.nx = t1;
+        c.ny = t2;
         c.min_force = 0.;
         c.max_force = 500.;
         c.min = Eigen::VectorXd::Zero(6);
