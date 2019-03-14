@@ -29,7 +29,7 @@ def options(opt):
     opt.load('dart')
     opt.load('robot_dart')
 
-    # opt.add_option('--shared', action='store_true', help='build shared library', dest='build_shared')
+    opt.add_option('--shared', action='store_true', help='build shared library', dest='build_shared')
     # opt.add_option('--tests', action='store_true', help='compile tests or not', dest='tests')
 
 
@@ -49,9 +49,9 @@ def configure(conf):
     conf.check_dart(required=True)
     conf.check_robot_dart(required=True)
 
-    # conf.env['lib_type'] = 'cxxstlib'
-    # if conf.options.build_shared:
-    #     conf.env['lib_type'] = 'cxxshlib'
+    conf.env['lib_type'] = 'cxxstlib'
+    if conf.options.build_shared:
+        conf.env['lib_type'] = 'cxxshlib'
 
     if conf.env.CXX_NAME in ["icc", "icpc"]:
         common_flags = "-Wall -std=c++14"
@@ -117,8 +117,7 @@ def build(bld):
                 cxxflags = cxxflags + ['-DLINUX'],
                 target = 'qpoases')
 
-    bld.program(features = 'cxx cxxstlib',
-                install_path = None,
+    bld.program(features = 'cxx ' + bld.env['lib_type'],
                 source = whc_srcs,
                 includes = './src ./src/external/qpOASES/include',
                 uselib = libs,
@@ -129,3 +128,19 @@ def build(bld):
     bld.recurse('./src/examples')
 
     bld.add_post_fun(summary)
+
+    install_files = []
+    for root, dirnames, filenames in os.walk(bld.path.abspath()+'/src/whc/'):
+        for filename in fnmatch.filter(filenames, '*.hpp'):
+            install_files.append(os.path.join(root, filename))
+    install_files = [f[len(bld.path.abspath())+1:] for f in install_files]
+
+    for f in install_files:
+        end_index = f.rfind('/')
+        if end_index == -1:
+            end_index = len(f)
+        bld.install_files('${PREFIX}/include/' + f[4:end_index], f)
+    if bld.env['lib_type'] == 'cxxstlib':
+        bld.install_files('${PREFIX}/lib', blddir + '/libwhc.a')
+    else:
+        bld.install_files('${PREFIX}/lib', blddir + '/libwhc.so')
