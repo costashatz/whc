@@ -31,17 +31,22 @@ namespace whc {
             void clear_all();
             void solve();
 
-            void add_task(std::unique_ptr<task::AbstractTask> task, double weight = 1.);
+            void add_task(std::unique_ptr<task::AbstractTask> task);
             void add_constraint(std::unique_ptr<constraint::AbstractConstraint> constraint);
 
             template <typename... Args>
             void add_contact(double weight, const std::string& body_name, Args... args)
             {
+                add_contact(Eigen::VectorXd::Constant(6, weight), body_name, std::forward<Args>(args)...);
+            }
+
+            template <typename... Args>
+            void add_contact(const Eigen::VectorXd& weights, const std::string& body_name, Args... args)
+            {
                 // Add contact constraint
                 _contact_constraints.emplace_back(utils::make_unique<constraint::ContactConstraint>(_robot->skeleton(), body_name, std::forward<Args>(args)...));
                 // Add zero acceleration task
-                _tasks.emplace_back(utils::make_unique<task::AccelerationTask>(_robot->skeleton(), body_name, Eigen::VectorXd::Zero(6)));
-                _task_weights.push_back(weight);
+                _tasks.emplace_back(utils::make_unique<task::AccelerationTask>(_robot->skeleton(), body_name, Eigen::VectorXd::Zero(6), weights));
             }
 
             size_t dim();
@@ -55,7 +60,6 @@ namespace whc {
             std::unique_ptr<AbstractQP> _solver = nullptr;
             std::shared_ptr<robot_dart::Robot> _robot;
             std::vector<std::unique_ptr<task::AbstractTask>> _tasks;
-            std::vector<double> _task_weights;
             std::vector<std::unique_ptr<constraint::ContactConstraint>> _contact_constraints;
             std::vector<std::unique_ptr<constraint::AbstractConstraint>> _constraints;
 

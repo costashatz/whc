@@ -110,18 +110,10 @@ def build(bld):
     qp_files = [f[len(bld.path.abspath())+1:] for f in qp_files]
     qp_srcs = " ".join(qp_files)
 
-    bld.program(features = 'cxx cxxstlib',
-                install_path = None,
-                source = qp_srcs,
-                includes = './src/external/qpOASES/include',
-                cxxflags = cxxflags + ['-DLINUX'],
-                target = 'qpoases')
-
     bld.program(features = 'cxx ' + bld.env['lib_type'],
-                source = whc_srcs,
+                source = whc_srcs + ' ' + qp_srcs,
                 includes = './src ./src/external/qpOASES/include',
                 uselib = libs,
-                use = 'qpoases',
                 cxxflags = cxxflags,
                 target = 'whc')
     

@@ -32,8 +32,8 @@ public:
         _solver->clear_all();
         Eigen::VectorXd target = Eigen::VectorXd::Zero(robot->skeleton()->getNumDofs() * 2);
         target.tail(robot->skeleton()->getNumDofs()) = robot->skeleton()->getCoriolisAndGravityForces();
-        _solver->add_task(whc::utils::make_unique<whc::task::AccelerationTask>(robot->skeleton(), "iiwa_link_ee", Eigen::VectorXd::Zero(6)), 10000.);
-        _solver->add_task(whc::utils::make_unique<whc::task::DirectTrackingTask>(robot->skeleton(), target), 0.001);
+        _solver->add_task(whc::utils::make_unique<whc::task::AccelerationTask>(robot->skeleton(), "iiwa_link_ee", Eigen::VectorXd::Zero(6), 10000.));
+        _solver->add_task(whc::utils::make_unique<whc::task::DirectTrackingTask>(robot->skeleton(), target, 0.001));
         _solver->add_constraint(whc::utils::make_unique<whc::constraint::DynamicsConstraint>(robot->skeleton(), false));
         _solver->add_constraint(whc::utils::make_unique<whc::constraint::JointLimitsConstraint>(robot->skeleton()));
         _solver->solve();

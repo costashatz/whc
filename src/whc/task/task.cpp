@@ -5,8 +5,8 @@
 namespace whc {
     namespace task {
         // AccelerationTask
-        AccelerationTask::AccelerationTask(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, const Eigen::VectorXd& desired)
-            : _skeleton(skeleton), _body_name(body_name), _desired_accelerations(desired) {}
+        AccelerationTask::AccelerationTask(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights)
+            : AbstractTask(skeleton, weights), _body_name(body_name), _desired_accelerations(desired) { assert(weights.size() == desired.size()); }
 
         std::pair<Eigen::MatrixXd, Eigen::VectorXd> AccelerationTask::get_costs()
         {
@@ -14,7 +14,9 @@ namespace whc {
             // Returns A matrix with only the acceleration part
             // the QPSolver should fix/resize the matrices
             Eigen::MatrixXd A = _jacobian;
-            Eigen::VectorXd b = _desired_accelerations - _jacobian_deriv * _dq;
+            for (int i = 0; i < A.rows(); i++)
+                A.row(i).array() *= _weights[i];
+            Eigen::VectorXd b = (_desired_accelerations - _jacobian_deriv * _dq).array() * _weights.array();
 
             return std::make_pair(A, b);
         }
@@ -37,8 +39,8 @@ namespace whc {
         }
 
         // COMAccelerationTask
-        COMAccelerationTask::COMAccelerationTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired)
-            : _skeleton(skeleton), _desired_accelerations(desired) {}
+        COMAccelerationTask::COMAccelerationTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights)
+            : AbstractTask(skeleton, weights), _desired_accelerations(desired) { assert(weights.size() == desired.size()); }
 
         std::pair<Eigen::MatrixXd, Eigen::VectorXd> COMAccelerationTask::get_costs()
         {
@@ -46,7 +48,9 @@ namespace whc {
             // Returns A matrix with only the acceleration part
             // the QPSolver should fix/resize the matrices
             Eigen::MatrixXd A = _jacobian;
-            Eigen::VectorXd b = _desired_accelerations - _jacobian_deriv * _dq;
+            for (int i = 0; i < A.rows(); i++)
+                A.row(i).array() *= _weights[i];
+            Eigen::VectorXd b = (_desired_accelerations - _jacobian_deriv * _dq).array() * _weights.array();
 
             return std::make_pair(A, b);
         }
@@ -65,14 +69,15 @@ namespace whc {
         }
 
         // DirectTrackingTask
-        DirectTrackingTask::DirectTrackingTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired)
-            : _skeleton(skeleton), _desired_values(desired) {}
+        DirectTrackingTask::DirectTrackingTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights)
+            : AbstractTask(skeleton, weights), _desired_values(desired) { assert(weights.size() == desired.size()); }
 
         std::pair<Eigen::MatrixXd, Eigen::VectorXd> DirectTrackingTask::get_costs()
         {
             // Assumes desired values to be same size of optimization variables
             Eigen::MatrixXd A = Eigen::MatrixXd::Identity(_desired_values.size(), _desired_values.size());
-            Eigen::VectorXd b = _desired_values;
+            A.diagonal().array() *= _weights.array();
+            Eigen::VectorXd b = _desired_values.array() * _weights.array();
 
             return std::make_pair(A, b);
         }
@@ -83,8 +88,8 @@ namespace whc {
         }
 
         // TauDiffTask
-        TauDiffTask::TauDiffTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& prev_tau)
-            : _skeleton(skeleton), _prev_tau(prev_tau) {}
+        TauDiffTask::TauDiffTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& prev_tau, const Eigen::VectorXd& weights)
+            : AbstractTask(skeleton, weights), _prev_tau(prev_tau) { assert(weights.size() == prev_tau.size()); }
 
         std::pair<Eigen::MatrixXd, Eigen::VectorXd> TauDiffTask::get_costs()
         {
@@ -93,8 +98,10 @@ namespace whc {
             // the QPSolver should fix/resize the matrices
             Eigen::MatrixXd A = Eigen::MatrixXd::Zero(2 * dofs, 2 * dofs);
             A.diagonal().tail(dofs) = Eigen::VectorXd::Ones(dofs);
+            A.diagonal().array() *= _weights.array();
             Eigen::VectorXd b = Eigen::VectorXd::Zero(2 * dofs);
             b.tail(dofs) = _prev_tau;
+            b.array() *= _weights.array();
 
             return std::make_pair(A, b);
         }

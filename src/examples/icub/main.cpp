@@ -38,12 +38,12 @@ public:
         double task_weight = 10000.;
         double gen_weight = 0.1;
 
-        _solver->add_task(whc::utils::make_unique<whc::task::COMAccelerationTask>(robot->skeleton(), Eigen::VectorXd::Zero(6)), task_weight);
-        _solver->add_task(whc::utils::make_unique<whc::task::AccelerationTask>(robot->skeleton(), "imu_frame", Eigen::VectorXd::Zero(6)), task_weight);
-        _solver->add_task(whc::utils::make_unique<whc::task::AccelerationTask>(robot->skeleton(), "r_hand", Eigen::VectorXd::Zero(6)), task_weight);
-        _solver->add_task(whc::utils::make_unique<whc::task::AccelerationTask>(robot->skeleton(), "l_hand", Eigen::VectorXd::Zero(6)), task_weight);
+        _solver->add_task(whc::utils::make_unique<whc::task::COMAccelerationTask>(robot->skeleton(), Eigen::VectorXd::Zero(6), task_weight));
+        _solver->add_task(whc::utils::make_unique<whc::task::AccelerationTask>(robot->skeleton(), "imu_frame", Eigen::VectorXd::Zero(6), task_weight));
+        _solver->add_task(whc::utils::make_unique<whc::task::AccelerationTask>(robot->skeleton(), "r_hand", Eigen::VectorXd::Zero(6), task_weight));
+        _solver->add_task(whc::utils::make_unique<whc::task::AccelerationTask>(robot->skeleton(), "l_hand", Eigen::VectorXd::Zero(6), task_weight));
         // regularization
-        _solver->add_task(whc::utils::make_unique<whc::task::DirectTrackingTask>(robot->skeleton(), target), gen_weight);
+        _solver->add_task(whc::utils::make_unique<whc::task::DirectTrackingTask>(robot->skeleton(), target, gen_weight));
         _solver->add_constraint(whc::utils::make_unique<whc::constraint::DynamicsConstraint>(robot->skeleton()));
         // _solver->add_task(whc::utils::make_unique<whc::task::TauDiffTask>(robot->skeleton(), _prev_tau), gen_weight);
 

@@ -22,7 +22,6 @@ namespace whc {
         void WhcSolver::clear_all()
         {
             _tasks.clear();
-            _task_weights.clear();
             _contact_constraints.clear();
             _constraints.clear();
         }
@@ -33,18 +32,14 @@ namespace whc {
             _solve();
         }
 
-        void WhcSolver::add_task(std::unique_ptr<task::AbstractTask> task, double weight)
+        void WhcSolver::add_task(std::unique_ptr<task::AbstractTask> task)
         {
             _tasks.emplace_back(std::move(task));
-            _task_weights.push_back(weight);
         }
 
         void WhcSolver::add_constraint(std::unique_ptr<constraint::AbstractConstraint> constraint)
         {
-            if (constraint->get_type() != "contact") {
-                _constraints.emplace_back(std::move(constraint));
-            }
-            // TO-DO: warning message
+            _constraints.emplace_back(std::move(constraint));
         }
 
         size_t WhcSolver::dim() { return _dim; }
@@ -81,10 +76,10 @@ namespace whc {
             size_t index = 0;
             size_t b_index = 0;
             for (size_t i = 0; i < _tasks.size(); i++) {
-                A.block(index, 0, A_matrices[i].rows(), A_matrices[i].cols()) = _task_weights[i] * A_matrices[i];
+                A.block(index, 0, A_matrices[i].rows(), A_matrices[i].cols()) = A_matrices[i];
                 index += A_matrices[i].rows();
 
-                b.segment(b_index, b_vectors[i].size()) = _task_weights[i] * b_vectors[i].transpose();
+                b.segment(b_index, b_vectors[i].size()) = b_vectors[i].transpose();
                 b_index += b_vectors[i].size();
             }
 
