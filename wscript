@@ -63,7 +63,7 @@ def configure(conf):
             conf.msg('-march=native (AVX support)', 'no (optional) --- some libraries are compiled with avx and others not; your programs might not run!', color='RED')
         else:
             conf.msg('-march=native (AVX support)', 'no (optional)', color='YELLOW')
-    
+
 
     conf.env['lib_type'] = 'cxxstlib'
     if conf.options.build_shared:
@@ -85,7 +85,6 @@ def configure(conf):
         if gcc_version >= 71:
             opt_flags = opt_flags + " -faligned-new"
 
-    
     all_flags = common_flags + opt_flags
     conf.env['CXXFLAGS'] = conf.env['CXXFLAGS'] + all_flags.split(' ')
     print(conf.env['CXXFLAGS'])
@@ -133,7 +132,7 @@ def build(bld):
                 uselib = libs,
                 cxxflags = cxxflags,
                 target = 'whc')
-    
+
     bld.recurse('./src/examples')
 
     bld.add_post_fun(summary)
