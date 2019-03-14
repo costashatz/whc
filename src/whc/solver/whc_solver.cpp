@@ -39,7 +39,10 @@ namespace whc {
 
         void WhcSolver::add_constraint(std::unique_ptr<constraint::AbstractConstraint> constraint)
         {
-            _constraints.emplace_back(std::move(constraint));
+            if (constraint->get_type() != "contact")
+                _constraints.emplace_back(std::move(constraint));
+            else
+                _contact_constraints.emplace_back(std::unique_ptr<constraint::ContactConstraint>{static_cast<constraint::ContactConstraint*>(constraint.release())});
         }
 
         size_t WhcSolver::dim() { return _dim; }
