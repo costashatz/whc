@@ -19,7 +19,7 @@ import dart
 import boost
 import eigen
 import robot_dart
-
+import avx
 
 def options(opt):
     opt.load('compiler_cxx')
@@ -43,11 +43,27 @@ def configure(conf):
     conf.load('eigen')
     conf.load('dart')
     conf.load('robot_dart')
+    conf.load('avx')
 
     conf.check_boost(lib='regex system filesystem unit_test_framework', min_version='1.46')
     conf.check_eigen(required=True)
     conf.check_dart(required=True)
     conf.check_robot_dart(required=True)
+
+    avx_dart = conf.check_avx(lib='dart', required=['dart', 'dart-utils', 'dart-utils-urdf'])
+    avx_robot_dart = conf.check_avx(lib='robot_dart', required=['RobotDARTSimu'], lib_type='static')
+    native = ''
+    native_icc = ''
+    if avx_dart and avx_robot_dart:
+        conf.msg('-march=native (AVX support)', 'yes', color='GREEN')
+        native = '-march=native'
+        native_icc = 'mtune=native'
+    else:
+        if avx_dart or avx_robot_dart:
+            conf.msg('-march=native (AVX support)', 'no (optional) --- some libraries are compiled with avx and others not; your programs might not run!', color='RED')
+        else:
+            conf.msg('-march=native (AVX support)', 'no (optional)', color='YELLOW')
+
 
     conf.env['lib_type'] = 'cxxstlib'
     if conf.options.build_shared:
@@ -55,17 +71,17 @@ def configure(conf):
 
     if conf.env.CXX_NAME in ["icc", "icpc"]:
         common_flags = "-Wall -std=c++14"
-        opt_flags = " -O3 -xHost -mtune=native -unroll -g"
+        opt_flags = " -O3 -xHost -unroll -g " +  native_icc
     elif conf.env.CXX_NAME in ["clang"]:
         common_flags = "-Wall -std=c++14"
-        opt_flags = " -O3 -march=native -g -faligned-new"
+        opt_flags = " -O3 -g -faligned-new " + native
     else:
         gcc_version = int(conf.env['CC_VERSION'][0]+conf.env['CC_VERSION'][1])
         if gcc_version < 47:
             conf.fatal('You need gcc version >= 4.7 for this project.')
         else:
             common_flags = "-Wall -std=c++14"
-        opt_flags = " -O3 -march=native -g"
+        opt_flags = " -O3 -g " + native
         if gcc_version >= 71:
             opt_flags = opt_flags + " -faligned-new"
 
@@ -116,7 +132,7 @@ def build(bld):
                 uselib = libs,
                 cxxflags = cxxflags,
                 target = 'whc')
-    
+
     bld.recurse('./src/examples')
 
     bld.add_post_fun(summary)

@@ -10,7 +10,6 @@ import os
 from copy import deepcopy
 from waflib.Configure import conf
 
-
 def options(opt):
     opt.add_option('--dart', type='string', help='path to DART physics engine/sim', dest='dart')
 
