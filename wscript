@@ -50,15 +50,19 @@ def configure(conf):
     conf.check_dart(required=True)
     conf.check_robot_dart(required=True)
 
-    avx = conf.check_avx(lib='dart',required=['dart', 'dart-utils', 'dart-utils-urdf'])
+    avx_dart = conf.check_avx(lib='dart', required=['dart', 'dart-utils', 'dart-utils-urdf'])
+    avx_robot_dart = conf.check_avx(lib='robot_dart', required=['RobotDARTSimu'], lib_type='static')
     native = ''
     native_icc = ''
-    if avx:
+    if avx_dart and avx_robot_dart:
         conf.msg('-march=native (AVX support)', 'yes', color='GREEN')
         native = '-march=native'
         native_icc = 'mtune=native'
     else:
-        conf.msg('-narch=native (AVX support)', 'no (optional)', color='YELLOW')
+        if avx_dart or avx_robot_dart:
+            conf.msg('-march=native (AVX support)', 'no (optional) --- some libraries are compiled with avx and others not; your programs might not run!', color='RED')
+        else:
+            conf.msg('-march=native (AVX support)', 'no (optional)', color='YELLOW')
     
 
     conf.env['lib_type'] = 'cxxstlib'

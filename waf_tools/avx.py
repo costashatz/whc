@@ -28,13 +28,21 @@ def test_avx(obj_name, path_list):
         return False
 
 @conf
-def check_avx(conf, lib, required=[]):
+def check_avx(conf, lib, required = [], lib_type = 'shared'):
     paths = conf.env['LIBPATH_' + lib.upper()]
     libs = conf.env['LIB_' + lib.upper()]
+    ext = '.so'
+    if lib_type == 'static':
+        libs = conf.env['STLIB_' + lib.upper()]
+        ext = '.a'
+    if not isinstance(libs, list):
+        libs = [libs]
+    if not isinstance(paths, list):
+        paths = [paths]
     failed = False
     for l in libs:
         if l in required or len(required) == 0:
-            res = test_avx('lib' + l + '.so', paths)
+            res = test_avx('lib' + l + ext, paths)
             conf.start_msg('AVX compilation of ' + l)
             if not res:
                 conf.end_msg('no', 'YELLOW')
@@ -42,6 +50,3 @@ def check_avx(conf, lib, required=[]):
             else:
                 conf.end_msg('yes', 'GREEN')
     return not failed
-
-
-        
