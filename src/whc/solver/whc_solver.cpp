@@ -128,9 +128,12 @@ namespace whc {
             }
 
             for (size_t i = 0; i < _contact_constraints.size(); i++) {
+                size_t start_i = 2 * dofs + i * 6;
+
                 Eigen::MatrixXd mat, bounds;
-                std::tie(mat, bounds) = _contact_constraints[i]->data(*this, i);
-                _A.block(c_index, 0, mat.rows(), mat.cols()) = mat;
+                std::tie(mat, bounds) = _contact_constraints[i]->data(*this);
+                _A.block(c_index, start_i, mat.rows(), mat.cols()) = mat;
+
                 _lbA.segment(c_index, bounds.cols()) = bounds.row(0);
                 _ubA.segment(c_index, bounds.cols()) = bounds.row(1);
                 c_index += mat.rows();

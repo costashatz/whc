@@ -10,7 +10,7 @@ namespace whc {
     namespace constraint {
         class AbstractConstraint {
         public:
-            virtual std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver&, size_t index = 0) = 0;
+            virtual std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver&) = 0;
 
             virtual size_t N() const = 0;
             virtual std::string get_type() const = 0;
@@ -20,7 +20,7 @@ namespace whc {
         public:
             DynamicsConstraint(const dart::dynamics::SkeletonPtr& skeleton, bool floating_base = true);
 
-            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver& solver, size_t index = 0) override;
+            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver& solver) override;
 
             size_t N() const override;
             std::string get_type() const override;
@@ -44,7 +44,7 @@ namespace whc {
         public:
             ContactConstraint(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, const Contact& contact);
 
-            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver& solver, size_t index) override;
+            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver& solver) override;
 
             Eigen::MatrixXd get_jacobian() const;
             Eigen::MatrixXd get_force_limits() const;
@@ -62,7 +62,7 @@ namespace whc {
         public:
             JointLimitsConstraint(const dart::dynamics::SkeletonPtr& skeleton);
 
-            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver& solver, size_t index = 0) override;
+            std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver& solver) override;
 
             size_t N() const override;
             std::string get_type() const override;
