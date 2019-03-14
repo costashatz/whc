@@ -54,11 +54,11 @@ def configure(conf):
     native = ''
     native_icc = ''
     if avx:
-        conf.msg('Compiling with', '-march=native', color='GREEN')
+        conf.msg('-march=native (AVX support)', 'yes', color='GREEN')
         native = '-march=native'
         native_icc = 'mtune=native'
     else:
-        conf.msg('some libraries are not compiled with AVX', 'disabling -march=native', color='YELLOW')
+        conf.msg('-narch=native (AVX support)', 'no (optional)', color='YELLOW')
     
 
     conf.env['lib_type'] = 'cxxstlib'
