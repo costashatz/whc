@@ -3,6 +3,8 @@
 
 #include <dart/dynamics/Skeleton.hpp>
 
+#include <whc/utils/common.hpp>
+
 namespace whc {
     namespace solver {
         class WhcSolver;
@@ -30,19 +32,9 @@ namespace whc {
             bool _floating_base;
         };
 
-        struct Contact {
-            Eigen::VectorXd nz; // normal of contact - pointing towards the robot
-            Eigen::VectorXd nx, ny; // orthonomal basis for contact
-            double mu, muR;
-            double min_force, max_force;
-            double d_y_min, d_y_max, d_x_min, d_x_max;
-            bool calculate_torque = false;
-            Eigen::VectorXd min, max; // 6D vectors for lower and upper bounds
-        };
-
         class ContactConstraint : public AbstractConstraint {
         public:
-            ContactConstraint(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, const Contact& contact);
+            ContactConstraint(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, const utils::Contact& contact);
 
             std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(solver::WhcSolver& solver) override;
 
@@ -55,7 +47,7 @@ namespace whc {
         protected:
             dart::dynamics::SkeletonPtr _skeleton;
             std::string _body_name;
-            Contact _contact;
+            utils::Contact _contact;
         };
 
         class JointLimitsConstraint : public AbstractConstraint {

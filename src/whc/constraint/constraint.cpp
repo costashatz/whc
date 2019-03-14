@@ -53,7 +53,7 @@ namespace whc {
             return "dynamics";
         }
 
-        ContactConstraint::ContactConstraint(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, const Contact& contact)
+        ContactConstraint::ContactConstraint(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, const utils::Contact& contact)
             : _skeleton(skeleton), _body_name(body_name), _contact(contact) {}
 
         // Friction cones from:

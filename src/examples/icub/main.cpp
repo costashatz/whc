@@ -52,7 +52,7 @@ public:
         up << 0., 0., 1.;
         t1 << 1., 0., 0.;
         t2 << 0., 1., 0.;
-        whc::constraint::Contact c;
+        whc::utils::Contact c;
         c.mu = 1.;
         c.muR = 1.;
         c.nz = up;
