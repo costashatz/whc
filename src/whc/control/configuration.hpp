@@ -24,6 +24,8 @@ namespace whc {
             utils::EndEffector* eef(const std::string& body_name);
             const utils::EndEffector* eef(const std::string& body_name) const;
 
+            size_t num_eefs() const;
+
             void update(bool update_contacts = true);
 
         protected:

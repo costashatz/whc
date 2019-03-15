@@ -7,11 +7,11 @@
 namespace whc {
     namespace solver {
         WhcSolver::WhcSolver() {}
-        WhcSolver::WhcSolver(std::shared_ptr<robot_dart::Robot> robot) : _robot(robot) {}
+        WhcSolver::WhcSolver(const dart::dynamics::SkeletonPtr& skeleton) : _skeleton(skeleton) {}
 
-        void WhcSolver::set_robot(const std::shared_ptr<robot_dart::Robot>& robot)
+        void WhcSolver::set_skeleton(const dart::dynamics::SkeletonPtr& skeleton)
         {
-            _robot = robot;
+            _skeleton = skeleton;
         }
 
         AbstractQP* WhcSolver::get_qp_solver() const
@@ -59,7 +59,7 @@ namespace whc {
 
         void WhcSolver::_setup_matrices()
         {
-            size_t dofs = _robot->skeleton()->getNumDofs();
+            size_t dofs = _skeleton->getNumDofs();
             size_t size = 0;
             size_t contacts = _contact_constraints.size();
             size_t N = contacts * 6;
@@ -92,11 +92,11 @@ namespace whc {
             _lb = Eigen::VectorXd::Zero(_dim);
             _ub = Eigen::VectorXd::Zero(_dim);
 
-            _lb.head(dofs) = _robot->skeleton()->getAccelerationLowerLimits();
-            _ub.head(dofs) = _robot->skeleton()->getAccelerationUpperLimits();
+            _lb.head(dofs) = _skeleton->getAccelerationLowerLimits();
+            _ub.head(dofs) = _skeleton->getAccelerationUpperLimits();
 
-            _lb.segment(dofs, dofs) = _robot->skeleton()->getForceLowerLimits();
-            _ub.segment(dofs, dofs) = _robot->skeleton()->getForceUpperLimits();
+            _lb.segment(dofs, dofs) = _skeleton->getForceLowerLimits();
+            _ub.segment(dofs, dofs) = _skeleton->getForceUpperLimits();
 
             for (size_t i = 0; i < contacts; i++) {
                 Eigen::MatrixXd bounds = _contact_constraints[i]->get_force_limits();

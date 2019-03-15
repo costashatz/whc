@@ -22,7 +22,7 @@ public:
     {
         _active = true;
         auto robot = _robot.lock();
-        _solver = std::make_shared<whc::solver::WhcSolver>(robot);
+        _solver = std::make_shared<whc::solver::WhcSolver>(robot->skeleton());
         _solver->set_qp_solver<whc::solver::QPOases>();
     }
 

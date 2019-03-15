@@ -49,6 +49,11 @@ namespace whc {
             return nullptr;
         }
 
+        size_t Configuration::num_eefs() const
+        {
+            return _end_effectors.size();
+        }
+
         void Configuration::update(bool update_contacts)
         {
             for (auto& e : _end_effectors) {

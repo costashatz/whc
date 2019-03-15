@@ -1,7 +1,5 @@
 #include <dart/dynamics/BodyNode.hpp>
 
-#include <robot_dart/robot.hpp>
-
 #include <whc/constraint/constraint.hpp>
 #include <whc/solver/whc_solver.hpp>
 
