@@ -1,3 +1,6 @@
+#ifndef WHC_UTILS_HELPERS_HPP
+#define WHC_UTILS_HELPERS_HPP
+
 #include <memory>
 
 namespace whc {
@@ -9,3 +12,5 @@ namespace whc {
         }
     } // namespace utils
 } // namespace whc
+
+#endif
