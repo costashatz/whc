@@ -84,6 +84,20 @@ namespace whc {
         protected:
             Eigen::VectorXd _prev_tau;
         };
+
+        class PostureTask : public AbstractTask {
+        public:
+            PostureTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, double weight = 1.)
+                : PostureTask(skeleton, desired, Eigen::VectorXd::Constant(desired.size(), weight)) {}
+            PostureTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights);
+
+            std::pair<Eigen::MatrixXd, Eigen::VectorXd> get_costs() override;
+
+            std::string get_type() const override;
+
+        protected:
+            Eigen::VectorXd _desired_values;
+        };
     } // namespace task
 } // namespace whc
 

@@ -22,12 +22,19 @@ namespace whc {
         };
 
         struct Frame {
+            Frame() {}
+            Frame(const Frame& other) : pose(other.pose), vel(other.vel), acc(other.acc) {}
+
             Eigen::VectorXd pose;
             Eigen::VectorXd vel;
             Eigen::VectorXd acc;
         };
 
         struct ControlFrame : public Frame {
+            ControlFrame() {}
+            ControlFrame(const ControlFrame& other) : Frame(other), control_pose(other.control_pose), control_vel(other.control_vel), control_acc(other.control_acc) {}
+            ControlFrame(const Frame& other) : Frame(other) {}
+
             bool control_pose = false;
             bool control_vel = false;
             bool control_acc = false;
@@ -47,12 +54,16 @@ namespace whc {
             {
                 auto bd = skeleton->getBodyNode(body_name);
                 if (bd) {
-                    state.pose = dart::math::logMap(bd->getWorldTransform());
+                    Eigen::Isometry3d bd_trans = bd->getWorldTransform();
+                    state.pose.resize(6);
+                    // state.pose.head(3) = dart::math::matrixToEulerXYZ(bd_trans.linear().matrix());
+                    state.pose.head(3) = dart::math::logMap(bd_trans.linear().matrix());
+                    state.pose.tail(3) = bd_trans.translation();
                     state.vel = bd->getSpatialVelocity();
                     state.acc = bd->getSpatialAcceleration();
 
                     if (update_contact) {
-                        Eigen::Vector3d bd_tr = bd->getWorldTransform().translation();
+                        Eigen::Vector3d bd_tr = bd_trans.translation();
 
                         Eigen::Isometry3d tx(Eigen::Isometry3d::Identity());
                         tx.translate(Eigen::Vector3d(1., 0., 0.));

@@ -9,7 +9,7 @@ namespace whc {
             Eigen::VectorXd kp, kd;
         };
 
-        Eigen::VectorXd acc_feedback(const utils::Frame& state, const utils::ControlFrame& desired, const PDGains& gains);
+        Eigen::VectorXd feedback(const utils::Frame& state, const utils::ControlFrame& desired, const PDGains& gains);
     } // namespace control
 } // namespace whc
 

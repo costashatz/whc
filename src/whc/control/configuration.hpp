@@ -17,6 +17,7 @@ namespace whc {
             void clear_all();
 
             void add_eef(const utils::EndEffector& eef);
+            void add_eef(const std::string& body_name, bool update_contact = true);
 
             utils::EndEffector* eef(size_t index);
             const utils::EndEffector* eef(size_t index) const;

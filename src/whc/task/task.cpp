@@ -110,5 +110,35 @@ namespace whc {
         {
             return "tau_diff";
         }
+
+        // PostureTask
+        PostureTask::PostureTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights)
+            : AbstractTask(skeleton, weights), _desired_values(desired)
+        {
+            assert(weights.size() == desired.size());
+            assert(skeleton->getNumDofs() == desired.size());
+        }
+
+        std::pair<Eigen::MatrixXd, Eigen::VectorXd> PostureTask::get_costs()
+        {
+            size_t dofs = _skeleton->getNumDofs();
+            double dt = _skeleton->getTimeStep();
+            Eigen::VectorXd dq = _skeleton->getVelocities();
+            Eigen::VectorXd q = _skeleton->getPositions();
+
+            // Assumes desired values to be same size of dofs
+            Eigen::MatrixXd A = Eigen::MatrixXd::Zero(dofs, dofs);
+            A.diagonal() = Eigen::VectorXd::Constant(dofs, dt * dt);
+            A.diagonal().array() *= _weights.array();
+            Eigen::VectorXd b = -(dq * dt + q) + _desired_values;
+            b = b.array() * _weights.array();
+
+            return std::make_pair(A, b);
+        }
+
+        std::string PostureTask::get_type() const
+        {
+            return "posture";
+        }
     } // namespace task
 } // namespace whc

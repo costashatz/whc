@@ -17,6 +17,18 @@ namespace whc {
                 _end_effectors.push_back(eef);
         }
 
+        void Configuration::add_eef(const std::string& body_name, bool update_contact)
+        {
+            // Add end-effector only if in skeleton
+            auto bd = _skeleton->getBodyNode(body_name);
+            if (bd) {
+                utils::EndEffector eef;
+                eef.body_name = body_name;
+                eef.update(_skeleton, update_contact);
+                _end_effectors.push_back(eef);
+            }
+        }
+
         utils::EndEffector* Configuration::eef(size_t index)
         {
             assert(index < _end_effectors.size());

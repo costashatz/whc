@@ -3,10 +3,8 @@
 
 namespace whc {
     namespace control {
-        Eigen::VectorXd acc_feedback(const utils::Frame& state, const utils::ControlFrame& desired, const PDGains& gains)
+        Eigen::VectorXd feedback(const utils::Frame& state, const utils::ControlFrame& desired, const PDGains& gains)
         {
-            assert(desired.control_acc);
-
             Eigen::VectorXd pos_error = desired.pose - state.pose;
             pos_error.head(3) = utils::rotation_error(dart::math::expMapRot(desired.pose.head(3)), dart::math::expMapRot(state.pose.head(3)));
 
