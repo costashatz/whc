@@ -1,6 +1,7 @@
 import subprocess
 import os
 import re
+import sys
 from waflib.Configure import conf
 
 # see : https://stackoverflow.com/questions/47878352/how-to-check-if-compiled-code-uses-sse-and-avx-instructions
@@ -31,7 +32,10 @@ def test_avx(obj_name, path_list):
 def check_avx(conf, lib, required = [], lib_type = 'shared'):
     paths = conf.env['LIBPATH_' + lib.upper()]
     libs = conf.env['LIB_' + lib.upper()]
-    ext = '.so'
+    if sys.platform == 'darwin':
+        ext = '.dylib'
+    else:
+        ext = '.so'
     if lib_type == 'static':
         libs = conf.env['STLIB_' + lib.upper()]
         ext = '.a'
