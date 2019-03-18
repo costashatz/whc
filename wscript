@@ -22,6 +22,7 @@ import robot_dart
 import avx
 
 def options(opt):
+    opt.load('compiler_fc')
     opt.load('compiler_cxx')
     opt.load('compiler_c')
     opt.load('boost')
@@ -36,6 +37,7 @@ def options(opt):
 def configure(conf):
     conf.get_env()['BUILD_GRAPHIC'] = False
 
+    conf.load('compiler_fc')
     conf.load('compiler_cxx')
     conf.load('compiler_c')
     conf.load('waf_unit_test')
@@ -101,13 +103,29 @@ def summary(bld):
         bld.fatal("Build failed, because some tests failed!")
 
 def build(bld):
-    libs = 'BOOST EIGEN DART ROBOT_DART '
+    bld.env.LIB_GFORTRAN = ['gfortran']
+    libs = 'BOOST EIGEN DART ROBOT_DART GFORTRAN '
     libs_graphics = libs + ' DART_GRAPHIC'
 
     bld.env['whc_libs'] = libs
     bld.env['whc_graphic_libs'] = libs_graphics
 
     cxxflags = bld.get_env()['CXXFLAGS']
+
+    # build qld fortran
+    bld.env.append_unique('FCFLAGS', '-O3')
+
+    bld.program(features = 'fc fcstlib',
+                source = './src/external/qld/qld.f',
+                includes = './src/external/qld',
+                target = 'fqld')
+    
+    bld.program(features = 'cxx cxxstlib',
+                source = './src/external/qld/qld.cpp',
+                includes = './src/external/qld',
+                uselib = 'EIGEN',
+                use = 'fqld',
+                target = 'qld')
 
     files = []
     for root, dirnames, filenames in os.walk(bld.path.abspath()+'/src/whc'):
@@ -128,8 +146,9 @@ def build(bld):
 
     bld.program(features = 'cxx ' + bld.env['lib_type'],
                 source = whc_srcs + ' ' + qp_srcs,
-                includes = './src ./src/external/qpOASES/include',
+                includes = './src ./src/external/qpOASES/include ./src/external/qld',
                 uselib = libs,
+                use = 'fqld qld',
                 cxxflags = cxxflags,
                 target = 'whc')
 
@@ -152,3 +171,5 @@ def build(bld):
         bld.install_files('${PREFIX}/lib', blddir + '/libwhc.a')
     else:
         bld.install_files('${PREFIX}/lib', blddir + '/libwhc.so')
+    bld.install_files('${PREFIX}/lib', blddir + '/libfqld.a')
+    bld.install_files('${PREFIX}/lib', blddir + '/libqld.a')
