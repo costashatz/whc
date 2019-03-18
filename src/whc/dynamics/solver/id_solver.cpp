@@ -1,5 +1,3 @@
-#include <dart/dynamics/BodyNode.hpp>
-
 #include <whc/dynamics/solver/id_solver.hpp>
 
 namespace whc {
