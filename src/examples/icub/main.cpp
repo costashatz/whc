@@ -13,8 +13,10 @@
 
 #include <whc/control/configuration.hpp>
 #include <whc/control/feedback.hpp>
-#include <whc/solver/qp_oases.hpp>
-#include <whc/solver/whc_solver.hpp>
+#include <whc/dynamics/constraint/constraints.hpp>
+#include <whc/dynamics/solver/id_solver.hpp>
+#include <whc/dynamics/task/tasks.hpp>
+#include <whc/qp_solver/qp_oases.hpp>
 #include <whc/utils/math.hpp>
 
 #include "iCub.hpp"
@@ -27,8 +29,8 @@ public:
     {
         _active = true;
         auto robot = _robot.lock();
-        _solver = std::make_shared<whc::solver::WhcSolver>(robot->skeleton());
-        _solver->set_qp_solver<whc::solver::QPOases>();
+        _solver = std::make_shared<whc::dyn::solver::IDSolver>(robot->skeleton());
+        _solver->set_qp_solver<whc::qp_solver::QPOases>();
         _prev_tau = Eigen::VectorXd::Zero(robot->skeleton()->getNumDofs());
         _init_pos = robot->skeleton()->getPositions();
 
@@ -127,7 +129,7 @@ public:
                 // we want zero accelerations
                 acc = Eigen::VectorXd::Zero(6);
                 // add a contact constraint
-                _solver->add_constraint(whc::utils::make_unique<whc::constraint::ContactConstraint>(_config.skeleton(), eef->body_name, eef->contact));
+                _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::ContactConstraint>(_config.skeleton(), eef->body_name, eef->contact));
             }
             // if (eef->body_name == "r_hand") {
             //     std::cout << "pose: " << eef->state.pose.transpose() << std::endl;
@@ -140,7 +142,7 @@ public:
             //     std::cout << "-------------------" << std::endl;
             //     // std::cin.get();
             // }
-            _solver->add_task(whc::utils::make_unique<whc::task::AccelerationTask>(_config.skeleton(), eef->body_name, acc, weights));
+            _solver->add_task(whc::utils::make_unique<whc::dyn::task::AccelerationTask>(_config.skeleton(), eef->body_name, acc, weights));
         }
 
         // Add COM acceleration task
@@ -154,23 +156,23 @@ public:
         gains.kd.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
         state.vel = robot->skeleton()->getCOMSpatialVelocity();
         Eigen::VectorXd com_acc = whc::control::feedback(state, desired, gains);
-        _solver->add_task(whc::utils::make_unique<whc::task::COMAccelerationTask>(robot->skeleton(), com_acc, 10000.));
+        _solver->add_task(whc::utils::make_unique<whc::dyn::task::COMAccelerationTask>(robot->skeleton(), com_acc, 10000.));
 
         // Add regularization task
         Eigen::VectorXd gweights = Eigen::VectorXd::Constant(target.size(), 0.001);
         // This is important for stability
         gweights.head(robot->skeleton()->getNumDofs()) = Eigen::VectorXd::Constant(robot->skeleton()->getNumDofs(), 100.);
-        _solver->add_task(whc::utils::make_unique<whc::task::DirectTrackingTask>(robot->skeleton(), target, gweights));
+        _solver->add_task(whc::utils::make_unique<whc::dyn::task::DirectTrackingTask>(robot->skeleton(), target, gweights));
 
         // // Posture task
         // Eigen::VectorXd pweights = Eigen::VectorXd::Constant(robot->skeleton()->getNumDofs(), 10000.);
         // pweights.head(6) = Eigen::VectorXd::Zero(6);
-        // _solver->add_task(whc::utils::make_unique<whc::task::PostureTask>(robot->skeleton(), _init_pos, pweights));
+        // _solver->add_task(whc::utils::make_unique<whc::dyn::task::PostureTask>(robot->skeleton(), _init_pos, pweights));
 
         // Add dynamics constraint
-        _solver->add_constraint(whc::utils::make_unique<whc::constraint::DynamicsConstraint>(robot->skeleton()));
+        _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::DynamicsConstraint>(robot->skeleton()));
         // Add joint limits constraint
-        _solver->add_constraint(whc::utils::make_unique<whc::constraint::JointLimitsConstraint>(robot->skeleton()));
+        _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::JointLimitsConstraint>(robot->skeleton()));
 
         _solver->solve();
 
@@ -186,7 +188,7 @@ public:
     }
 
 protected:
-    std::shared_ptr<whc::solver::WhcSolver> _solver;
+    std::shared_ptr<whc::dyn::solver::IDSolver> _solver;
     Eigen::VectorXd _prev_tau, _init_pos;
     whc::control::Configuration _config;
 };

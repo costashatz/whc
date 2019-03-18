@@ -1,10 +1,10 @@
-#ifndef WHC_SOLVER_QP_OASES_HPP
-#define WHC_SOLVER_QP_OASES_HPP
+#ifndef WHC_QP_SOLVER_QP_OASES_HPP
+#define WHC_QP_SOLVER_QP_OASES_HPP
 
-#include <whc/solver/abstract_qp.hpp>
+#include <whc/qp_solver/abstract_qp.hpp>
 
 namespace whc {
-    namespace solver {
+    namespace qp_solver {
         class QPOases : public AbstractQP {
         public:
             QPOases(double max_time = 0.005, int max_iters = 1000);
@@ -23,7 +23,7 @@ namespace whc {
             double _max_time;
             int _max_iters;
         };
-    } // namespace solver
+    } // namespace qp_solver
 } // namespace whc
 
 #endif

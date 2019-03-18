@@ -13,8 +13,10 @@
 
 #include <whc/control/configuration.hpp>
 #include <whc/control/feedback.hpp>
-#include <whc/solver/qp_oases.hpp>
-#include <whc/solver/whc_solver.hpp>
+#include <whc/dynamics/constraint/constraints.hpp>
+#include <whc/dynamics/solver/id_solver.hpp>
+#include <whc/dynamics/task/tasks.hpp>
+#include <whc/qp_solver/qp_oases.hpp>
 #include <whc/utils/math.hpp>
 
 class QPControl : public robot_dart::control::RobotControl {
@@ -25,8 +27,8 @@ public:
     {
         _active = true;
         auto robot = _robot.lock();
-        _solver = std::make_shared<whc::solver::WhcSolver>(robot->skeleton());
-        _solver->set_qp_solver<whc::solver::QPOases>();
+        _solver = std::make_shared<whc::dyn::solver::IDSolver>(robot->skeleton());
+        _solver->set_qp_solver<whc::qp_solver::QPOases>();
         _config = whc::control::Configuration(robot->skeleton());
         _config.add_eef("iiwa_link_ee", false); // no need for contacts
 
@@ -65,15 +67,15 @@ public:
         // std::cout << "vel: " << eef->state.vel.transpose() << std::endl;
         // std::cout << "control: " << acc.transpose() << std::endl;
         // std::cout << "-------------------" << std::endl;
-        _solver->add_task(whc::utils::make_unique<whc::task::AccelerationTask>(_config.skeleton(), "iiwa_link_ee", acc, weights));
+        _solver->add_task(whc::utils::make_unique<whc::dyn::task::AccelerationTask>(_config.skeleton(), "iiwa_link_ee", acc, weights));
 
         Eigen::VectorXd gweights = Eigen::VectorXd::Constant(target.size(), 0.001);
         // This is important for stability
         gweights.head(robot->skeleton()->getNumDofs()) = Eigen::VectorXd::Constant(robot->skeleton()->getNumDofs(), 100.);
 
-        _solver->add_task(whc::utils::make_unique<whc::task::DirectTrackingTask>(robot->skeleton(), target, gweights));
-        _solver->add_constraint(whc::utils::make_unique<whc::constraint::DynamicsConstraint>(robot->skeleton(), false));
-        _solver->add_constraint(whc::utils::make_unique<whc::constraint::JointLimitsConstraint>(robot->skeleton()));
+        _solver->add_task(whc::utils::make_unique<whc::dyn::task::DirectTrackingTask>(robot->skeleton(), target, gweights));
+        _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::DynamicsConstraint>(robot->skeleton(), false));
+        _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::JointLimitsConstraint>(robot->skeleton()));
         _solver->solve();
 
         Eigen::VectorXd commands = _solver->solution().tail(robot->skeleton()->getNumDofs());
@@ -86,7 +88,7 @@ public:
     }
 
 protected:
-    std::shared_ptr<whc::solver::WhcSolver> _solver;
+    std::shared_ptr<whc::dyn::solver::IDSolver> _solver;
     whc::control::Configuration _config;
 };
 
