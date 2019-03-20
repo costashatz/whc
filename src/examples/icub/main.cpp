@@ -66,7 +66,7 @@ public:
         contact_right.max = Eigen::VectorXd::Zero(6);
         contact_right.max.tail(3) << contact_right.max_force, contact_right.max_force, contact_right.max_force;
         double max_torque = 100.;
-        contact_right.calculate_torque = false;
+        contact_right.calculate_torque = true;
         // if (contact_right.calculate_torque) {
         contact_right.min.head(3) << -max_torque, -max_torque, -max_torque;
         contact_right.max.head(3) << max_torque, max_torque, max_torque;
@@ -86,7 +86,7 @@ public:
         }
         contact_right.d_y_min = -foot_size_y / 2. - sole_y;
         contact_right.d_y_max = foot_size_y / 2.;
-        contact_right.d_x_min = -sole_x;
+        contact_right.d_x_min = -sole_x - 0.02;
         contact_right.d_x_max = foot_size_x - sole_x;
 
         whc::utils::Contact contact_left = contact_right;
@@ -333,6 +333,8 @@ int main()
     icub_robot->skeleton()->getJoint("l_ankle_pitch")->setPosition(0, -0.3);
 
     // icub_robot->skeleton()->getJoint("torso_yaw")->setPosition(0, M_PI / 5.);
+    // icub_robot->skeleton()->getJoint("torso_pitch")->setPosition(0, 0.5);
+    // icub_robot->skeleton()->getJoint("torso_roll")->setPosition(0, 0.25);
 
     robot_dart::RobotDARTSimu simu(0.005);
     simu.world()->getConstraintSolver()->setCollisionDetector(dart::collision::BulletCollisionDetector::create());

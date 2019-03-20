@@ -105,22 +105,22 @@ namespace whc {
                     // A.block(8, 3, 1, 3).array() *= -d_y_max; // * _contact.nz[2];
 
                     // 1a
-                    // 0 <= T*t1-d_x_min*F*n <= max
+                    // 0 <= T*t1-d_y_min*F*n <= max
                     A.block(5, 0, 1, 3) = _contact.nx.transpose();
                     A.block(5, 3, 1, 3) = -d_y_min * _contact.nz.transpose();
 
                     // 1b
-                    // -max <= T*t1-d_x_max*F*n <= 0
+                    // -max <= T*t1-d_y_max*F*n <= 0
                     A.block(6, 0, 1, 3) = _contact.nx.transpose();
                     A.block(6, 3, 1, 3) = -d_y_max * _contact.nz.transpose();
 
                     // 2a
-                    // 0 <= T*t2-d_y_min*F*n <= max
+                    // 0 <= T*t2-d_x_min*F*n <= max
                     A.block(7, 0, 1, 3) = _contact.ny.transpose();
                     A.block(7, 3, 1, 3) = -d_x_min * _contact.nz.transpose();
 
                     // 2b
-                    // -max <= T*t2-d_y_max*F*n <= 0
+                    // -max <= T*t2-d_x_max*F*n <= 0
                     A.block(8, 0, 1, 3) = _contact.ny.transpose();
                     A.block(8, 3, 1, 3) = -d_x_max * _contact.nz.transpose();
 
