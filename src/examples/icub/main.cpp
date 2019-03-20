@@ -35,13 +35,16 @@ public:
         _init_pos = robot->skeleton()->getPositions();
 
         _config = whc::control::Configuration(robot->skeleton());
-        _config.add_eef("imu_frame", false); // no need for contacts for head
+        _config.add_eef("head", false); // no need for contacts for head
         _config.add_eef("root_link", false); // no need for contacts for root link
+        _config.add_eef("chest", false); // no need for contacts for root link
         _config.add_eef("r_hand", false); // no need for contacts for hands
         _config.add_eef("l_hand", false);
 
         _config.add_eef("r_sole"); // contacts for feet
         _config.add_eef("l_sole");
+
+        _config.update(true); // update contact information as well
 
         // Set desired state -- keep end-effectors posture
         for (size_t i = 0; i < _config.num_eefs(); i++) {
@@ -63,11 +66,11 @@ public:
         contact_right.max = Eigen::VectorXd::Zero(6);
         contact_right.max.tail(3) << contact_right.max_force, contact_right.max_force, contact_right.max_force;
         double max_torque = 100.;
-        contact_right.calculate_torque = true;
-        if (contact_right.calculate_torque) {
-            contact_right.min.head(3) << -max_torque, -max_torque, -max_torque;
-            contact_right.max.head(3) << max_torque, max_torque, max_torque;
-        }
+        contact_right.calculate_torque = false;
+        // if (contact_right.calculate_torque) {
+        contact_right.min.head(3) << -max_torque, -max_torque, -max_torque;
+        contact_right.max.head(3) << max_torque, max_torque, max_torque;
+        // }
 
         // iCub Nancy
         double foot_size_x = 0.12;
@@ -98,6 +101,8 @@ public:
         _config.eef("r_sole")->contact = contact_right;
         _config.eef("l_sole")->keep_contact = true;
         _config.eef("l_sole")->contact = contact_left;
+
+        _init_pos = robot->skeleton()->getPositions().tail(robot->skeleton()->getNumDofs() - 6);
     }
 
     Eigen::VectorXd calculate(double t) override
@@ -109,59 +114,110 @@ public:
         Eigen::VectorXd target = Eigen::VectorXd::Zero(robot->skeleton()->getNumDofs() * 2 + 2 * 6);
         target.segment(robot->skeleton()->getNumDofs(), robot->skeleton()->getNumDofs()).tail(_control_dof) = robot->skeleton()->getCoriolisAndGravityForces().tail(_control_dof);
 
-        Eigen::VectorXd weights = Eigen::VectorXd::Constant(6, 10000.);
-        // weights.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
-
-        whc::control::PDGains gains;
-        gains.kp = Eigen::VectorXd::Constant(6, 10.);
-        // gains.kp.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
-        gains.kd = Eigen::VectorXd::Constant(6, 0.3);
-        // gains.kd.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
+        // whc::control::PDGains gains;
+        // gains.kp = Eigen::VectorXd::Constant(6, 50.);
+        // // gains.kp.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
+        // gains.kd = Eigen::VectorXd::Constant(6, 200.);
+        // // gains.kd.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
 
         // Add accelerations tasks for end-effectors
         for (size_t i = 0; i < _config.num_eefs(); i++) {
+            whc::control::PDGains gains;
+            gains.kp = Eigen::VectorXd::Constant(6, 100.);
+            // gains.kp.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
+            gains.kd = Eigen::VectorXd::Constant(6, 100.);
+            // gains.kd.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
+
             auto eef = _config.eef(i);
             Eigen::VectorXd acc = whc::control::feedback(eef->state, eef->desired, gains);
             // acc = Eigen::VectorXd::Zero(6);
 
+            Eigen::VectorXd weights = Eigen::VectorXd::Constant(6, 100.);
+            // weights.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
+
             // if this is a contact
             if (eef->keep_contact) {
+                weights.array() *= 100.;
                 // we want zero accelerations
                 acc = Eigen::VectorXd::Zero(6);
                 // add a contact constraint
                 _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::ContactConstraint>(_config.skeleton(), eef->body_name, eef->contact));
             }
+            if (eef->body_name == "head") {
+                weights.tail(3) = Eigen::VectorXd::Zero(3);
+                acc.tail(3) = Eigen::VectorXd::Zero(3);
+            }
+            if (eef->body_name == "chest") {
+                weights.tail(3) = Eigen::VectorXd::Zero(3);
+                acc.tail(3) = Eigen::VectorXd::Zero(3);
+            }
+            // if (eef->body_name == "root_link") {
+            //     weights.head(3) = Eigen::VectorXd::Zero(3);
+            //     acc.head(3) = Eigen::VectorXd::Zero(3);
+            // }
+
+            // if (eef->body_name != "head" && eef->body_name != "chest" && eef->body_name != "root_link")
+            //     acc = Eigen::VectorXd::Zero(6);
             // if (eef->body_name == "r_hand") {
-            //     std::cout << "pose: " << eef->state.pose.transpose() << std::endl;
-            //     std::cout << "desired: " << eef->desired.pose.transpose() << std::endl;
-            //     Eigen::VectorXd pos_error = eef->desired.pose - eef->state.pose;
-            //     pos_error.head(3) = whc::utils::rotation_error(dart::math::expMapRot(eef->desired.pose.head(3)), dart::math::expMapRot(eef->state.pose.head(3)));
-            //     std::cout << "error: " << pos_error.transpose() << std::endl;
-            //     std::cout << "vel: " << eef->state.vel.transpose() << std::endl;
-            //     std::cout << "control: " << acc.transpose() << std::endl;
-            //     std::cout << "-------------------" << std::endl;
+            std::cout << eef->body_name << std::endl;
+            std::cout << "pose: " << eef->state.pose.transpose() << std::endl;
+            std::cout << "desired: " << eef->desired.pose.transpose() << std::endl;
+            Eigen::VectorXd pos_error = eef->desired.pose - eef->state.pose;
+            pos_error.head(3) = whc::utils::rotation_error(dart::math::expMapRot(eef->desired.pose.head(3)), dart::math::expMapRot(eef->state.pose.head(3)));
+            std::cout << "error: " << pos_error.transpose() << std::endl;
+            std::cout << "vel: " << eef->state.vel.transpose() << std::endl;
+            std::cout << "control: " << acc.transpose() << std::endl;
+            std::cout << "-------------------" << std::endl;
             //     // std::cin.get();
             // }
             _solver->add_task(whc::utils::make_unique<whc::dyn::task::AccelerationTask>(_config.skeleton(), eef->body_name, acc, weights));
-        }
 
-        // Add COM acceleration task
-        whc::utils::Frame state;
-        state.pose = Eigen::VectorXd::Zero(6);
-        state.vel = Eigen::VectorXd::Zero(6);
-        state.acc = Eigen::VectorXd::Zero(6);
-        whc::utils::ControlFrame desired = state;
-        gains.kp = Eigen::VectorXd::Constant(6, 0.); // no position control
-        gains.kd = Eigen::VectorXd::Constant(6, 1.);
-        gains.kd.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
-        state.vel = robot->skeleton()->getCOMSpatialVelocity();
-        Eigen::VectorXd com_acc = whc::control::feedback(state, desired, gains);
-        _solver->add_task(whc::utils::make_unique<whc::dyn::task::COMAccelerationTask>(robot->skeleton(), com_acc, 10000.));
+            // // sanity checks
+            // std::cout << "CHECKS" << std::endl;
+            // auto bd = _config.skeleton()->getBodyNode(eef->body_name);
+
+            // Eigen::MatrixXd jacobian = _config.skeleton()->getWorldJacobian(bd);
+
+            // std::cout << (jacobian * _config.skeleton()->getVelocities()).transpose() << std::endl;
+            // std::cout << eef->state.vel.transpose() << std::endl;
+        }
+        std::cout << "-------------------" << std::endl;
+
+        // // Add COM acceleration task
+        // whc::utils::Frame state;
+        // state.pose = Eigen::VectorXd::Zero(6);
+        // state.vel = Eigen::VectorXd::Zero(6);
+        // state.acc = Eigen::VectorXd::Zero(6);
+        // whc::utils::ControlFrame desired = state;
+        // gains.kp = Eigen::VectorXd::Constant(6, 0.); // no position control
+        // gains.kd = Eigen::VectorXd::Constant(6, 5.);
+        // // gains.kd.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
+        // state.vel = robot->skeleton()->getCOMSpatialVelocity();
+        // Eigen::VectorXd com_acc = whc::control::feedback(state, desired, gains);
+        // // std::cout << state.vel.transpose() << std::endl;
+        // // std::cout << com_acc.transpose() << std::endl;
+        // // std::cout << "----" << std::endl;
+        // // com_acc = Eigen::VectorXd::Zero(6);
+        // _solver->add_task(whc::utils::make_unique<whc::dyn::task::COMAccelerationTask>(robot->skeleton(), com_acc, 10.));
 
         // Add regularization task
-        Eigen::VectorXd gweights = Eigen::VectorXd::Constant(target.size(), 0.001);
+        Eigen::VectorXd gweights = Eigen::VectorXd::Constant(target.size(), 0.01);
         // This is important for stability
-        gweights.head(robot->skeleton()->getNumDofs()) = Eigen::VectorXd::Constant(robot->skeleton()->getNumDofs(), 100.);
+        gweights.head(robot->skeleton()->getNumDofs()) = Eigen::VectorXd::Constant(robot->skeleton()->getNumDofs(), 10.);
+        // gweights.tail(12) = Eigen::VectorXd::Constant(12, 0.1);
+        double Kp = 100.;
+        double Kd = 100.;
+        // Eigen::VectorXd posture = Eigen::VectorXd::Zero(robot->skeleton()->getNumDofs());
+        // Eigen::VectorXd upper = robot->skeleton()->getPositionUpperLimits().tail(robot->skeleton()->getNumDofs() - 6);
+        // Eigen::VectorXd lower = robot->skeleton()->getPositionLowerLimits().tail(robot->skeleton()->getNumDofs() - 6);
+        // posture.tail(robot->skeleton()->getNumDofs() - 6) = (upper - lower) / 2.;
+        // // std::cout << posture.transpose() << std::endl;
+        // target.head(robot->skeleton()->getNumDofs()) = Kp * (posture - robot->skeleton()->getPositions()) - Kd * robot->skeleton()->getVelocities();
+        // target.head(6) = Eigen::VectorXd::Zero(6);
+        target.head(robot->skeleton()->getNumDofs()).tail(_control_dof) = Kp * (_init_pos - robot->skeleton()->getPositions().tail(_control_dof)) - Kd * robot->skeleton()->getVelocities().tail(_control_dof);
+        std::cout << "q: " << robot->skeleton()->getPositions().tail(_control_dof).transpose() << std::endl;
+        std::cout << "q_d: " << _init_pos.transpose() << std::endl;
+
         _solver->add_task(whc::utils::make_unique<whc::dyn::task::DirectTrackingTask>(robot->skeleton(), target, gweights));
 
         // // Posture task
@@ -172,12 +228,17 @@ public:
         // Add dynamics constraint
         _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::DynamicsConstraint>(robot->skeleton()));
         // Add joint limits constraint
-        _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::JointLimitsConstraint>(robot->skeleton()));
+        // _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::JointLimitsConstraint>(robot->skeleton()));
 
         _solver->solve();
 
+        std::cout << "F: " << _solver->solution().tail(12).transpose() << std::endl;
+        std::cout << "qddot: " << _solver->solution().head(robot->skeleton()->getNumDofs()).transpose() << std::endl;
+
         Eigen::VectorXd commands = _solver->solution().segment(robot->skeleton()->getNumDofs(), robot->skeleton()->getNumDofs()).tail(_control_dof);
         _prev_tau = _solver->solution().segment(robot->skeleton()->getNumDofs(), robot->skeleton()->getNumDofs());
+
+        // std::cin.get();
 
         return commands;
     }
@@ -204,7 +265,7 @@ void stabilize_robot(const std::shared_ptr<robot_dart::Robot>& robot, robot_dart
     // std::static_pointer_cast<robot_dart::control::PDControl>(robot->controller(0))->set_pd(200., 10.);
     std::static_pointer_cast<robot_dart::control::PDControl>(robot->controller(0))->set_pd(1000., 10.);
 
-    simu.run(10.);
+    simu.run(3.);
 
     robot->clear_controllers();
 }
@@ -215,7 +276,7 @@ int main()
     whc::icub_example::iCub icub(model, model);
 
     auto icub_robot = icub.robot();
-    icub_robot->set_position_enforced(false);
+    icub_robot->set_position_enforced(true);
     icub_robot->skeleton()->disableSelfCollisionCheck();
     icub_robot->skeleton()->setPosition(5, 0.625);
     if (model == "iCubNancy01")
@@ -246,6 +307,25 @@ int main()
     icub_robot->skeleton()->setVelocityLowerLimits(lb);
     icub_robot->skeleton()->setVelocityLowerLimits(ub);
 
+    // Eigen::VectorXd posture = Eigen::VectorXd::Zero(icub_robot->skeleton()->getNumDofs());
+    // Eigen::VectorXd upper = icub_robot->skeleton()->getPositionUpperLimits().tail(icub_robot->skeleton()->getNumDofs() - 6);
+    // Eigen::VectorXd lower = icub_robot->skeleton()->getPositionLowerLimits().tail(icub_robot->skeleton()->getNumDofs() - 6);
+    // posture.tail(icub_robot->skeleton()->getNumDofs() - 6) = (upper - lower) / 2.;
+    // posture.head(6) = icub_robot->skeleton()->getPositions().head(6);
+    // icub_robot->skeleton()->setPositions(posture);
+
+    icub_robot->skeleton()->getJoint("l_shoulder_roll")->setPosition(0, 0.2);
+    icub_robot->skeleton()->getJoint("r_shoulder_roll")->setPosition(0, 0.2);
+
+    icub_robot->skeleton()->getJoint("r_hip_pitch")->setPosition(0, 0.3);
+    icub_robot->skeleton()->getJoint("l_hip_pitch")->setPosition(0, 0.3);
+
+    icub_robot->skeleton()->getJoint("r_knee")->setPosition(0, -0.6);
+    icub_robot->skeleton()->getJoint("l_knee")->setPosition(0, -0.6);
+
+    icub_robot->skeleton()->getJoint("r_ankle_pitch")->setPosition(0, -0.3);
+    icub_robot->skeleton()->getJoint("l_ankle_pitch")->setPosition(0, -0.3);
+
     robot_dart::RobotDARTSimu simu(0.005);
     simu.world()->getConstraintSolver()->setCollisionDetector(dart::collision::BulletCollisionDetector::create());
 #ifdef GRAPHIC
@@ -261,7 +341,7 @@ int main()
 
     icub_robot->add_controller(std::make_shared<QPControl>());
 
-    simu.run(20.);
+    simu.run(120.);
 
     return 0;
 }

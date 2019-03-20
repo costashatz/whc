@@ -76,6 +76,7 @@ namespace whc {
                 A.block(3, 3, 1, 3) = (_contact.mu * _contact.nz + _contact.ny).transpose();
                 A.block(4, 3, 1, 3) = _contact.nz.transpose();
                 // Torque
+                // TO-DO: THIS HAS A BUG!
                 if (_contact.calculate_torque) {
                     double d_y_min = _contact.d_y_min;
                     double d_y_max = _contact.d_y_max;
