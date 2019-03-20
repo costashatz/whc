@@ -75,7 +75,7 @@ public:
         // iCub Nancy
         double foot_size_x = 0.12;
         double foot_size_y = 0.04;
-        double sole_x = 0.0214502260596;
+        double sole_x = 0.04; //0.0214502260596 + 0.02;
         double sole_y = 0.;
         // iCub Gazebo
         if (robot->skeleton()->getName() != "iCubNancy01") {
@@ -86,7 +86,7 @@ public:
         }
         contact_right.d_y_min = -foot_size_y / 2. - sole_y;
         contact_right.d_y_max = foot_size_y / 2.;
-        contact_right.d_x_min = -sole_x - 0.02;
+        contact_right.d_x_min = -sole_x;
         contact_right.d_x_max = foot_size_x - sole_x;
 
         whc::utils::Contact contact_left = contact_right;
@@ -195,6 +195,7 @@ public:
         // state.vel = Eigen::VectorXd::Zero(6);
         // state.acc = Eigen::VectorXd::Zero(6);
         // whc::utils::ControlFrame desired = state;
+        // whc::control::PDGains gains;
         // gains.kp = Eigen::VectorXd::Constant(6, 0.); // no position control
         // gains.kd = Eigen::VectorXd::Constant(6, 5.);
         // // gains.kd.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
@@ -204,7 +205,7 @@ public:
         // // std::cout << com_acc.transpose() << std::endl;
         // // std::cout << "----" << std::endl;
         // // com_acc = Eigen::VectorXd::Zero(6);
-        // _solver->add_task(whc::utils::make_unique<whc::dyn::task::COMAccelerationTask>(robot->skeleton(), com_acc, 10.));
+        // _solver->add_task(whc::utils::make_unique<whc::dyn::task::COMAccelerationTask>(robot->skeleton(), com_acc, 100.));
 
         // Add regularization task
         Eigen::VectorXd gweights = Eigen::VectorXd::Constant(target.size(), 0.01);
@@ -234,7 +235,7 @@ public:
         // Add dynamics constraint
         _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::DynamicsConstraint>(robot->skeleton()));
         // Add joint limits constraint
-        // _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::JointLimitsConstraint>(robot->skeleton()));
+        _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::JointLimitsConstraint>(robot->skeleton()));
 
         _solver->solve();
 
@@ -267,7 +268,6 @@ void stabilize_robot(const std::shared_ptr<robot_dart::Robot>& robot, robot_dart
     Eigen::VectorXd::Map(target.data(), target.size()) = robot->skeleton()->getPositions().tail(robot->skeleton()->getNumDofs() - 6);
 
     robot->add_controller(std::make_shared<robot_dart::control::PDControl>(target));
-    // std::static_pointer_cast<robot_dart::control::PDControl>(robot->controller(0))->set_pd(1000., 10.);
     // std::static_pointer_cast<robot_dart::control::PDControl>(robot->controller(0))->set_pd(200., 10.);
     std::static_pointer_cast<robot_dart::control::PDControl>(robot->controller(0))->set_pd(1000., 10.);
 
@@ -350,6 +350,12 @@ int main()
     std::cout << "Stabilized robot!" << std::endl;
 
     icub_robot->add_controller(std::make_shared<QPControl>());
+
+    // simu.run(5.);
+    // std::cout << "Applying force!" << std::endl;
+    // icub_robot->skeleton()->getBodyNode("chest")->setExtForce({0., 20., 0.});
+    // simu.run(0.1);
+    // icub_robot->skeleton()->getBodyNode("chest")->clearExternalForces();
 
     simu.run(120.);
 
