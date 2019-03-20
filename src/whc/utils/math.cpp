@@ -60,7 +60,8 @@ namespace whc {
 
             w *= sinc_inv(theta) * 0.5;
 
-            return R_ab.transpose() * w;
+            // return R_ab.transpose() * w; // this is in local frame
+            return w;
         }
     } // namespace utils
 } // namespace whc

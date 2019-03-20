@@ -73,9 +73,9 @@ public:
         Eigen::VectorXd gweights = Eigen::VectorXd::Constant(target.size(), 0.001);
         // This is important for stability
         gweights.head(robot->skeleton()->getNumDofs()) = Eigen::VectorXd::Constant(robot->skeleton()->getNumDofs(), 0.1);
-        double Kp = 5.;
-        double Kd = 5.;
-        target.head(robot->skeleton()->getNumDofs()) = -Kp * robot->skeleton()->getPositions() - Kd * robot->skeleton()->getVelocities();
+        // double Kp = 5.;
+        // double Kd = 5.;
+        // target.head(robot->skeleton()->getNumDofs()) = -Kp * robot->skeleton()->getPositions() - Kd * robot->skeleton()->getVelocities();
 
         _solver->add_task(whc::utils::make_unique<whc::dyn::task::DirectTrackingTask>(robot->skeleton(), target, gweights));
 

@@ -112,7 +112,7 @@ public:
 
         _solver->clear_all();
         Eigen::VectorXd target = Eigen::VectorXd::Zero(robot->skeleton()->getNumDofs() * 2 + 2 * 6);
-        target.segment(robot->skeleton()->getNumDofs(), robot->skeleton()->getNumDofs()).tail(_control_dof) = robot->skeleton()->getCoriolisAndGravityForces().tail(_control_dof);
+        // target.segment(robot->skeleton()->getNumDofs(), robot->skeleton()->getNumDofs()).tail(_control_dof) = robot->skeleton()->getCoriolisAndGravityForces().tail(_control_dof);
 
         // whc::control::PDGains gains;
         // gains.kp = Eigen::VectorXd::Constant(6, 50.);
@@ -146,10 +146,16 @@ public:
             if (eef->body_name == "head") {
                 weights.tail(3) = Eigen::VectorXd::Zero(3);
                 acc.tail(3) = Eigen::VectorXd::Zero(3);
+                // auto bd = _config.skeleton()->getBodyNode(eef->body_name);
+                // Eigen::Matrix3d bd_trans = bd->getWorldTransform().linear();
+                // acc.head(3) = bd_trans * acc.head(3);
             }
             if (eef->body_name == "chest") {
                 weights.tail(3) = Eigen::VectorXd::Zero(3);
                 acc.tail(3) = Eigen::VectorXd::Zero(3);
+                // auto bd = _config.skeleton()->getBodyNode(eef->body_name);
+                // Eigen::Matrix3d bd_trans = bd->getWorldTransform().linear();
+                // acc.head(3) = bd_trans * acc.head(3);
             }
             // if (eef->body_name == "root_link") {
             //     weights.head(3) = Eigen::VectorXd::Zero(3);
@@ -159,15 +165,15 @@ public:
             // if (eef->body_name != "head" && eef->body_name != "chest" && eef->body_name != "root_link")
             //     acc = Eigen::VectorXd::Zero(6);
             // if (eef->body_name == "r_hand") {
-            std::cout << eef->body_name << std::endl;
-            std::cout << "pose: " << eef->state.pose.transpose() << std::endl;
-            std::cout << "desired: " << eef->desired.pose.transpose() << std::endl;
-            Eigen::VectorXd pos_error = eef->desired.pose - eef->state.pose;
-            pos_error.head(3) = whc::utils::rotation_error(dart::math::expMapRot(eef->desired.pose.head(3)), dart::math::expMapRot(eef->state.pose.head(3)));
-            std::cout << "error: " << pos_error.transpose() << std::endl;
-            std::cout << "vel: " << eef->state.vel.transpose() << std::endl;
-            std::cout << "control: " << acc.transpose() << std::endl;
-            std::cout << "-------------------" << std::endl;
+            // std::cout << eef->body_name << std::endl;
+            // std::cout << "pose: " << eef->state.pose.transpose() << std::endl;
+            // std::cout << "desired: " << eef->desired.pose.transpose() << std::endl;
+            // Eigen::VectorXd pos_error = eef->desired.pose - eef->state.pose;
+            // pos_error.head(3) = whc::utils::rotation_error(dart::math::expMapRot(eef->desired.pose.head(3)), dart::math::expMapRot(eef->state.pose.head(3)));
+            // std::cout << "error: " << pos_error.transpose() << std::endl;
+            // std::cout << "vel: " << eef->state.vel.transpose() << std::endl;
+            // std::cout << "control: " << acc.transpose() << std::endl;
+            // std::cout << "-------------------" << std::endl;
             //     // std::cin.get();
             // }
             _solver->add_task(whc::utils::make_unique<whc::dyn::task::AccelerationTask>(_config.skeleton(), eef->body_name, acc, weights));
@@ -181,7 +187,7 @@ public:
             // std::cout << (jacobian * _config.skeleton()->getVelocities()).transpose() << std::endl;
             // std::cout << eef->state.vel.transpose() << std::endl;
         }
-        std::cout << "-------------------" << std::endl;
+        // std::cout << "-------------------" << std::endl;
 
         // // Add COM acceleration task
         // whc::utils::Frame state;
@@ -204,19 +210,19 @@ public:
         Eigen::VectorXd gweights = Eigen::VectorXd::Constant(target.size(), 0.01);
         // This is important for stability
         gweights.head(robot->skeleton()->getNumDofs()) = Eigen::VectorXd::Constant(robot->skeleton()->getNumDofs(), 10.);
-        // gweights.tail(12) = Eigen::VectorXd::Constant(12, 0.1);
-        double Kp = 100.;
-        double Kd = 100.;
-        // Eigen::VectorXd posture = Eigen::VectorXd::Zero(robot->skeleton()->getNumDofs());
-        // Eigen::VectorXd upper = robot->skeleton()->getPositionUpperLimits().tail(robot->skeleton()->getNumDofs() - 6);
-        // Eigen::VectorXd lower = robot->skeleton()->getPositionLowerLimits().tail(robot->skeleton()->getNumDofs() - 6);
-        // posture.tail(robot->skeleton()->getNumDofs() - 6) = (upper - lower) / 2.;
-        // // std::cout << posture.transpose() << std::endl;
-        // target.head(robot->skeleton()->getNumDofs()) = Kp * (posture - robot->skeleton()->getPositions()) - Kd * robot->skeleton()->getVelocities();
-        // target.head(6) = Eigen::VectorXd::Zero(6);
-        target.head(robot->skeleton()->getNumDofs()).tail(_control_dof) = Kp * (_init_pos - robot->skeleton()->getPositions().tail(_control_dof)) - Kd * robot->skeleton()->getVelocities().tail(_control_dof);
-        std::cout << "q: " << robot->skeleton()->getPositions().tail(_control_dof).transpose() << std::endl;
-        std::cout << "q_d: " << _init_pos.transpose() << std::endl;
+        // // gweights.tail(12) = Eigen::VectorXd::Constant(12, 0.1);
+        // double Kp = 100.;
+        // double Kd = 100.;
+        // // Eigen::VectorXd posture = Eigen::VectorXd::Zero(robot->skeleton()->getNumDofs());
+        // // Eigen::VectorXd upper = robot->skeleton()->getPositionUpperLimits().tail(robot->skeleton()->getNumDofs() - 6);
+        // // Eigen::VectorXd lower = robot->skeleton()->getPositionLowerLimits().tail(robot->skeleton()->getNumDofs() - 6);
+        // // posture.tail(robot->skeleton()->getNumDofs() - 6) = (upper - lower) / 2.;
+        // // // std::cout << posture.transpose() << std::endl;
+        // // target.head(robot->skeleton()->getNumDofs()) = Kp * (posture - robot->skeleton()->getPositions()) - Kd * robot->skeleton()->getVelocities();
+        // // target.head(6) = Eigen::VectorXd::Zero(6);
+        // target.head(robot->skeleton()->getNumDofs()).tail(_control_dof) = Kp * (_init_pos - robot->skeleton()->getPositions().tail(_control_dof)) - Kd * robot->skeleton()->getVelocities().tail(_control_dof);
+        // // std::cout << "q: " << robot->skeleton()->getPositions().tail(_control_dof).transpose() << std::endl;
+        // // std::cout << "q_d: " << _init_pos.transpose() << std::endl;
 
         _solver->add_task(whc::utils::make_unique<whc::dyn::task::DirectTrackingTask>(robot->skeleton(), target, gweights));
 
@@ -232,8 +238,8 @@ public:
 
         _solver->solve();
 
-        std::cout << "F: " << _solver->solution().tail(12).transpose() << std::endl;
-        std::cout << "qddot: " << _solver->solution().head(robot->skeleton()->getNumDofs()).transpose() << std::endl;
+        // std::cout << "F: " << _solver->solution().tail(12).transpose() << std::endl;
+        // std::cout << "qddot: " << _solver->solution().head(robot->skeleton()->getNumDofs()).transpose() << std::endl;
 
         Eigen::VectorXd commands = _solver->solution().segment(robot->skeleton()->getNumDofs(), robot->skeleton()->getNumDofs()).tail(_control_dof);
         _prev_tau = _solver->solution().segment(robot->skeleton()->getNumDofs(), robot->skeleton()->getNumDofs());
@@ -325,6 +331,8 @@ int main()
 
     icub_robot->skeleton()->getJoint("r_ankle_pitch")->setPosition(0, -0.3);
     icub_robot->skeleton()->getJoint("l_ankle_pitch")->setPosition(0, -0.3);
+
+    // icub_robot->skeleton()->getJoint("torso_yaw")->setPosition(0, M_PI / 5.);
 
     robot_dart::RobotDARTSimu simu(0.005);
     simu.world()->getConstraintSolver()->setCollisionDetector(dart::collision::BulletCollisionDetector::create());
