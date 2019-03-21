@@ -87,7 +87,7 @@ def configure(conf):
         if gcc_version >= 71:
             opt_flags = opt_flags + " -faligned-new"
 
-    all_flags = common_flags + opt_flags
+    all_flags = common_flags + opt_flags + ' -fPIC'
     conf.env['CXXFLAGS'] = conf.env['CXXFLAGS'] + all_flags.split(' ')
     print(conf.env['CXXFLAGS'])
 
@@ -118,6 +118,7 @@ def build(bld):
     bld.program(features = 'fc fcstlib',
                 source = './src/external/qld/qld.f',
                 includes = './src/external/qld',
+                fcflags = ['-fPIC'],
                 target = 'fqld')
     
     bld.program(features = 'cxx cxxstlib',
@@ -125,6 +126,7 @@ def build(bld):
                 includes = './src/external/qld',
                 uselib = 'EIGEN',
                 use = 'fqld',
+                cxxflags = cxxflags,
                 target = 'qld')
 
     files = []
@@ -144,13 +146,21 @@ def build(bld):
     qp_files = [f[len(bld.path.abspath())+1:] for f in qp_files]
     qp_srcs = " ".join(qp_files)
 
+    lib_name = 'whc'
+    if bld.env['lib_type'] == 'cxxstlib':
+        lib_name = 'whc_thin'
+    bld.env['lib_name'] = lib_name
+
     bld.program(features = 'cxx ' + bld.env['lib_type'],
                 source = whc_srcs + ' ' + qp_srcs,
                 includes = './src ./src/external/qpOASES/include ./src/external/qld',
                 uselib = libs,
                 use = 'fqld qld',
                 cxxflags = cxxflags,
-                target = 'whc')
+                target = lib_name)
+
+    if bld.env['lib_type'] == 'cxxstlib':
+        bld(rule='ar -rcT ${TGT} ${SRC}', source='libfqld.a libqld.a lib' + lib_name + '.a', target='libwhc.a', use=lib_name)
 
     bld.recurse('./src/examples')
 

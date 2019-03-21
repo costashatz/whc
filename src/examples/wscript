@@ -12,7 +12,7 @@ def build(bld):
                 source = 'icub/main.cpp',
                 includes = '..',
                 uselib = bld.env['whc_libs'],
-                use = 'whc',
+                use = bld.env['lib_name'],
                 cxxflags = cxxflags + ['-DRESPATH="' + icub_path + '"'],
                 target = 'icub_example')
     bld.program(features = 'cxx',
@@ -20,7 +20,7 @@ def build(bld):
                 source = 'iiwa/main.cpp',
                 includes = '..',
                 uselib = bld.env['whc_libs'],
-                use = 'whc',
+                use = bld.env['lib_name'],
                 cxxflags = cxxflags + ['-DRESPATH="' + iiwa_path + '"'],
                 target = 'iiwa_example')
     if bld.get_env()['BUILD_GRAPHIC'] == True:
@@ -29,7 +29,7 @@ def build(bld):
                     source = 'icub/main.cpp',
                     includes = '..',
                     uselib = bld.env['whc_graphic_libs'],
-                    use = 'whc',
+                    use = bld.env['lib_name'],
                     cxxflags = cxxflags + ['-DRESPATH="' + icub_path + '"'],
                     defines = ['GRAPHIC'],
                     target = 'icub_example_graphic')
@@ -38,7 +38,7 @@ def build(bld):
                     source = 'iiwa/main.cpp',
                     includes = '..',
                     uselib = bld.env['whc_graphic_libs'],
-                    use = 'whc',
+                    use = bld.env['lib_name'],
                     cxxflags = cxxflags + ['-DRESPATH="' + iiwa_path + '"'],
                     defines = ['GRAPHIC'],
                     target = 'iiwa_example_graphic')
