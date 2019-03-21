@@ -66,7 +66,7 @@ namespace whc {
                 double max_f = _contact.max_force;
                 size_t num_constraints = 5;
                 if (_contact.calculate_torque)
-                    num_constraints += 6;
+                    num_constraints += 4;
 
                 Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_constraints, 6);
                 // Force
@@ -76,63 +76,63 @@ namespace whc {
                 A.block(3, 3, 1, 3) = (_contact.mu * _contact.nz + _contact.ny).transpose();
                 A.block(4, 3, 1, 3) = _contact.nz.transpose();
                 // Torque
-                // TO-DO: THIS HAS A BUG!
+                // TO-DO: CHECK IF THIS IS CORRECT
                 if (_contact.calculate_torque) {
                     double d_y_min = _contact.d_y_min;
                     double d_y_max = _contact.d_y_max;
                     double d_x_min = _contact.d_x_min;
                     double d_x_max = _contact.d_x_max;
-                    // Eigen::MatrixXd R = _skeleton->getBodyNode(_body_name)->getTransform().linear();
-                    // // first constraint: 0 <= -T_y^b - d_x_min*F_z^b <= max
-                    // A.block(5, 0, 1, 3) << -R(1, 0), -R(1, 1), -R(1, 2);
-                    // // A.block(5, 0, 1, 3).array() *= _contact.nz[1];
-                    // A.block(5, 3, 1, 3) << R(2, 0), R(2, 1), R(2, 2);
-                    // A.block(5, 3, 1, 3).array() *= -d_x_min; // * _contact.nz[2];
-                    // // second constraint: -max <= -T_y^b - d_x_max*F_z^b <= 0
-                    // A.block(6, 0, 1, 3) << -R(1, 0), -R(1, 1), -R(1, 2);
-                    // // A.block(6, 0, 1, 3).array() *= _contact.nz[1];
-                    // A.block(6, 3, 1, 3) << R(2, 0), R(2, 1), R(2, 2);
-                    // A.block(6, 3, 1, 3).array() *= -d_x_max; // * _contact.nz[2];
-                    // // third constraint: 0 <= T_x^b - d_y_min*F_z^b <= max
-                    // A.block(7, 0, 1, 3) << R(0, 0), R(0, 1), R(0, 2);
-                    // // A.block(7, 0, 1, 3).array() *= _contact.nz[0];
-                    // A.block(7, 3, 1, 3) << R(2, 0), R(2, 1), R(2, 2);
-                    // A.block(7, 3, 1, 3).array() *= -d_y_min; // * _contact.nz[2];
-                    // // fourth constraint: -max <= T_x^b - d_y_max*F_z^b <= 0
-                    // A.block(8, 0, 1, 3) << R(0, 0), R(0, 1), R(0, 2);
-                    // // A.block(8, 0, 1, 3).array() *= _contact.nz[0];
-                    // A.block(8, 3, 1, 3) << R(2, 0), R(2, 1), R(2, 2);
-                    // A.block(8, 3, 1, 3).array() *= -d_y_max; // * _contact.nz[2];
+                    Eigen::MatrixXd R = _skeleton->getBodyNode(_body_name)->getTransform().linear();
+                    // first constraint: 0 <= -T_y^b - d_x_min*F_z^b <= max
+                    A.block(5, 0, 1, 3) << -R(1, 0), -R(1, 1), -R(1, 2);
+                    // A.block(5, 0, 1, 3).array() *= _contact.nz[1];
+                    A.block(5, 3, 1, 3) << R(2, 0), R(2, 1), R(2, 2);
+                    A.block(5, 3, 1, 3).array() *= -d_x_min; // * _contact.nz[2];
+                    // second constraint: -max <= -T_y^b - d_x_max*F_z^b <= 0
+                    A.block(6, 0, 1, 3) << -R(1, 0), -R(1, 1), -R(1, 2);
+                    // A.block(6, 0, 1, 3).array() *= _contact.nz[1];
+                    A.block(6, 3, 1, 3) << R(2, 0), R(2, 1), R(2, 2);
+                    A.block(6, 3, 1, 3).array() *= -d_x_max; // * _contact.nz[2];
+                    // third constraint: 0 <= T_x^b - d_y_min*F_z^b <= max
+                    A.block(7, 0, 1, 3) << R(0, 0), R(0, 1), R(0, 2);
+                    // A.block(7, 0, 1, 3).array() *= _contact.nz[0];
+                    A.block(7, 3, 1, 3) << R(2, 0), R(2, 1), R(2, 2);
+                    A.block(7, 3, 1, 3).array() *= -d_y_min; // * _contact.nz[2];
+                    // fourth constraint: -max <= T_x^b - d_y_max*F_z^b <= 0
+                    A.block(8, 0, 1, 3) << R(0, 0), R(0, 1), R(0, 2);
+                    // A.block(8, 0, 1, 3).array() *= _contact.nz[0];
+                    A.block(8, 3, 1, 3) << R(2, 0), R(2, 1), R(2, 2);
+                    A.block(8, 3, 1, 3).array() *= -d_y_max; // * _contact.nz[2];
 
-                    // 1a
-                    // 0 <= T*t1-d_y_min*F*n <= max
-                    A.block(5, 0, 1, 3) = _contact.nx.transpose();
-                    A.block(5, 3, 1, 3) = -d_y_min * _contact.nz.transpose();
+                    // // 1a
+                    // // 0 <= T*t1-d_y_min*F*n <= max
+                    // A.block(5, 0, 1, 3) = _contact.nx.transpose();
+                    // A.block(5, 3, 1, 3) = -d_y_min * _contact.nz.transpose();
 
-                    // 1b
-                    // -max <= T*t1-d_y_max*F*n <= 0
-                    A.block(6, 0, 1, 3) = _contact.nx.transpose();
-                    A.block(6, 3, 1, 3) = -d_y_max * _contact.nz.transpose();
+                    // // 1b
+                    // // -max <= T*t1-d_y_max*F*n <= 0
+                    // A.block(6, 0, 1, 3) = _contact.nx.transpose();
+                    // A.block(6, 3, 1, 3) = -d_y_max * _contact.nz.transpose();
 
-                    // 2a
-                    // 0 <= T*t2-d_x_min*F*n <= max
-                    A.block(7, 0, 1, 3) = _contact.ny.transpose();
-                    A.block(7, 3, 1, 3) = -d_x_min * _contact.nz.transpose();
+                    // // 2a
+                    // // 0 <= T*t2-d_x_min*F*n <= max
+                    // A.block(7, 0, 1, 3) = _contact.ny.transpose();
+                    // A.block(7, 3, 1, 3) = -d_x_min * _contact.nz.transpose();
 
-                    // 2b
-                    // -max <= T*t2-d_x_max*F*n <= 0
-                    A.block(8, 0, 1, 3) = _contact.ny.transpose();
-                    A.block(8, 3, 1, 3) = -d_x_max * _contact.nz.transpose();
+                    // // 2b
+                    // // -max <= T*t2-d_x_max*F*n <= 0
+                    // A.block(8, 0, 1, 3) = _contact.ny.transpose();
+                    // A.block(8, 3, 1, 3) = -d_x_max * _contact.nz.transpose();
 
-                    // 3a
-                    // 0 <= T*n+muR*F*n <= max
-                    A.block(9, 0, 1, 3) = _contact.nz.transpose();
-                    A.block(9, 3, 1, 3) = _contact.muR * _contact.nz.transpose();
+                    // // 3a
+                    // // 0 <= T*n+muR*F*n <= max
+                    // A.block(9, 0, 1, 3) = _contact.nz.transpose();
+                    // A.block(9, 3, 1, 3) = _contact.muR * _contact.nz.transpose();
 
-                    // 3b
-                    // -max <= T*n-muR*F*n <= 0
-                    A.block(10, 0, 1, 3) = _contact.nz.transpose();
-                    A.block(10, 3, 1, 3) = -_contact.muR * _contact.nz.transpose();
+                    // // 3b
+                    // // -max <= T*n-muR*F*n <= 0
+                    // A.block(10, 0, 1, 3) = _contact.nz.transpose();
+                    // A.block(10, 3, 1, 3) = -_contact.muR * _contact.nz.transpose();
                 }
                 // std::cout << A.block(0, 0, num_constraints, 6) << std::endl
                 //           << std::endl;
@@ -140,10 +140,10 @@ namespace whc {
                 bounds.row(0).head(5) << -max, -max, 0., 0., min_f;
                 bounds.row(1).head(5) << 0., 0., max, max, max_f;
                 if (_contact.calculate_torque) {
-                    // bounds.row(0).tail(4) << 0, -max, 0, -max;
-                    // bounds.row(1).tail(4) << max, 0, max, 0;
-                    bounds.row(0).tail(6) << 0, -max, 0, -max, 0, -max;
-                    bounds.row(1).tail(6) << max, 0, max, 0, max, 0;
+                    bounds.row(0).tail(4) << 0, -max, 0, -max;
+                    bounds.row(1).tail(4) << max, 0, max, 0;
+                    // bounds.row(0).tail(6) << 0, -max, 0, -max, 0, -max;
+                    // bounds.row(1).tail(6) << max, 0, max, 0, max, 0;
                 }
 
                 return std::make_pair(A, bounds);
@@ -169,7 +169,7 @@ namespace whc {
 
             size_t ContactConstraint::N() const
             {
-                return 5 + ((_contact.calculate_torque) ? 6 : 0);
+                return 5 + ((_contact.calculate_torque) ? 4 : 0);
             }
 
             std::string ContactConstraint::get_type() const
