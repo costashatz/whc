@@ -104,13 +104,13 @@ public:
 
         _init_pos = robot->skeleton()->getPositions().tail(robot->skeleton()->getNumDofs() - 6);
 
-        // _config.eef("root_link")->desired.pose.tail(3)[2] -= 0.15;
-        // _config.eef("root_link")->desired.pose.tail(3)[0] += 0.12;
+        _config.eef("root_link")->desired.pose.tail(3)[2] -= 0.15;
+        _config.eef("root_link")->desired.pose.tail(3)[0] += 0.12;
 
-        // _config.eef("r_hand")->desired.pose.tail(3)[2] -= 0.1;
-        // _config.eef("r_hand")->desired.pose.tail(3)[0] += 0.02;
-        // _config.eef("l_hand")->desired.pose.tail(3)[2] -= 0.1;
-        // _config.eef("l_hand")->desired.pose.tail(3)[0] += 0.02;
+        _config.eef("r_hand")->desired.pose.tail(3)[2] -= 0.1;
+        _config.eef("r_hand")->desired.pose.tail(3)[0] += 0.02;
+        _config.eef("l_hand")->desired.pose.tail(3)[2] -= 0.1;
+        _config.eef("l_hand")->desired.pose.tail(3)[0] += 0.02;
     }
 
     Eigen::VectorXd calculate(double t) override
