@@ -34,6 +34,7 @@ public:
 
         _config.eef(0)->desired = _config.eef(0)->state;
         _config.eef(0)->desired.pose << -1.08292e-13, -1.0472, -4.56493e-12, -0.81926, 4.55583e-12, 0.833;
+        // _config.eef(0)->desired.pose << -1.08292e-13, -1.0472, -4.56493e-12, -0.81926, 4.55583e-12, 0.5;
         _config.eef(0)->desired.vel = Eigen::VectorXd::Zero(6);
         _config.eef(0)->desired.acc = Eigen::VectorXd::Zero(6);
     }
@@ -47,14 +48,14 @@ public:
         Eigen::VectorXd target = Eigen::VectorXd::Zero(robot->skeleton()->getNumDofs() * 2);
         // target.tail(robot->skeleton()->getNumDofs()) = robot->skeleton()->getCoriolisAndGravityForces();
 
-        Eigen::VectorXd weights = Eigen::VectorXd::Constant(6, 100.);
+        Eigen::VectorXd weights = Eigen::VectorXd::Constant(6, 1.);
         // weights.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
         // weights.head(3) = Eigen::VectorXd::Constant(3, 50.); // smaller weights for orientation
 
         whc::control::PDGains gains;
-        gains.kp = Eigen::VectorXd::Constant(6, 100.);
+        gains.kp = Eigen::VectorXd::Constant(6, 5.);
         // gains.kp.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
-        gains.kd = Eigen::VectorXd::Constant(6, 80.);
+        gains.kd = Eigen::VectorXd::Constant(6, 5.);
         // gains.kd.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
 
         auto eef = _config.eef(0);
@@ -71,9 +72,13 @@ public:
 
         Eigen::VectorXd gweights = Eigen::VectorXd::Constant(target.size(), 0.001);
         // This is important for stability
-        gweights.head(robot->skeleton()->getNumDofs()) = Eigen::VectorXd::Constant(robot->skeleton()->getNumDofs(), 100.);
+        gweights.head(robot->skeleton()->getNumDofs()) = Eigen::VectorXd::Constant(robot->skeleton()->getNumDofs(), 0.1);
+        // double Kp = 5.;
+        // double Kd = 5.;
+        // target.head(robot->skeleton()->getNumDofs()) = -Kp * robot->skeleton()->getPositions() - Kd * robot->skeleton()->getVelocities();
 
         _solver->add_task(whc::utils::make_unique<whc::dyn::task::DirectTrackingTask>(robot->skeleton(), target, gweights));
+
         _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::DynamicsConstraint>(robot->skeleton(), false));
         _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::JointLimitsConstraint>(robot->skeleton()));
         _solver->solve();

@@ -59,8 +59,8 @@ namespace whc {
                     // state.pose.head(3) = dart::math::matrixToEulerXYZ(bd_trans.linear().matrix());
                     state.pose.head(3) = dart::math::logMap(bd_trans.linear().matrix());
                     state.pose.tail(3) = bd_trans.translation();
-                    state.vel = bd->getSpatialVelocity();
-                    state.acc = bd->getSpatialAcceleration();
+                    state.vel = bd->getSpatialVelocity(dart::dynamics::Frame::World(), dart::dynamics::Frame::World());
+                    state.acc = bd->getSpatialAcceleration(dart::dynamics::Frame::World(), dart::dynamics::Frame::World());
 
                     if (update_contact) {
                         Eigen::Vector3d bd_tr = bd_trans.translation();
