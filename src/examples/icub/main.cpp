@@ -103,6 +103,14 @@ public:
         _config.eef("l_sole")->contact = contact_left;
 
         _init_pos = robot->skeleton()->getPositions().tail(robot->skeleton()->getNumDofs() - 6);
+
+        // _config.eef("root_link")->desired.pose.tail(3)[2] -= 0.15;
+        // _config.eef("root_link")->desired.pose.tail(3)[0] += 0.12;
+
+        // _config.eef("r_hand")->desired.pose.tail(3)[2] -= 0.1;
+        // _config.eef("r_hand")->desired.pose.tail(3)[0] += 0.02;
+        // _config.eef("l_hand")->desired.pose.tail(3)[2] -= 0.1;
+        // _config.eef("l_hand")->desired.pose.tail(3)[0] += 0.02;
     }
 
     Eigen::VectorXd calculate(double t) override
@@ -156,6 +164,10 @@ public:
                 // auto bd = _config.skeleton()->getBodyNode(eef->body_name);
                 // Eigen::Matrix3d bd_trans = bd->getWorldTransform().linear();
                 // acc.head(3) = bd_trans * acc.head(3);
+                gains.kp = Eigen::VectorXd::Constant(6, 10.);
+                // gains.kp.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
+                gains.kd = Eigen::VectorXd::Constant(6, 10.);
+                // gains.kd.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
             }
             // if (eef->body_name == "root_link") {
             //     weights.head(3) = Eigen::VectorXd::Zero(3);
@@ -209,6 +221,7 @@ public:
 
         // Add regularization task
         Eigen::VectorXd gweights = Eigen::VectorXd::Constant(target.size(), 0.01);
+        gweights.tail(12) = Eigen::VectorXd::Ones(12);
         // This is important for stability
         gweights.head(robot->skeleton()->getNumDofs()) = Eigen::VectorXd::Constant(robot->skeleton()->getNumDofs(), 10.);
         // // gweights.tail(12) = Eigen::VectorXd::Constant(12, 0.1);
@@ -235,7 +248,7 @@ public:
         // Add dynamics constraint
         _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::DynamicsConstraint>(robot->skeleton()));
         // Add joint limits constraint
-        _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::JointLimitsConstraint>(robot->skeleton()));
+        // _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::JointLimitsConstraint>(robot->skeleton()));
 
         _solver->solve();
 
