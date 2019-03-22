@@ -2,10 +2,10 @@
 
 #include <qpOASES.hpp>
 
-#include <whc/solver/qp_oases.hpp>
+#include <whc/qp_solver/qp_oases.hpp>
 
 namespace whc {
-    namespace solver {
+    namespace qp_solver {
         QPOases::QPOases(double max_time, int max_iters) : _max_time(max_time), _max_iters(max_iters) {}
 
         void QPOases::solve(const Eigen::MatrixXd& H, const Eigen::VectorXd& g, const Eigen::MatrixXd& A, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub, const Eigen::VectorXd& lbA, const Eigen::VectorXd& ubA)
@@ -117,5 +117,5 @@ namespace whc {
         {
             return _max_iters;
         }
-    } // namespace solver
+    } // namespace qp_solver
 } // namespace whc
