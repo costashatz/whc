@@ -326,13 +326,6 @@ int main()
     icub_robot->skeleton()->setVelocityLowerLimits(lb);
     icub_robot->skeleton()->setVelocityLowerLimits(ub);
 
-    // Eigen::VectorXd posture = Eigen::VectorXd::Zero(icub_robot->skeleton()->getNumDofs());
-    // Eigen::VectorXd upper = icub_robot->skeleton()->getPositionUpperLimits().tail(icub_robot->skeleton()->getNumDofs() - 6);
-    // Eigen::VectorXd lower = icub_robot->skeleton()->getPositionLowerLimits().tail(icub_robot->skeleton()->getNumDofs() - 6);
-    // posture.tail(icub_robot->skeleton()->getNumDofs() - 6) = (upper - lower) / 2.;
-    // posture.head(6) = icub_robot->skeleton()->getPositions().head(6);
-    // icub_robot->skeleton()->setPositions(posture);
-
     icub_robot->skeleton()->getJoint("l_shoulder_roll")->setPosition(0, 0.2);
     icub_robot->skeleton()->getJoint("r_shoulder_roll")->setPosition(0, 0.2);
 
