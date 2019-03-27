@@ -73,7 +73,8 @@ namespace whc {
                 ubA_qp[i] = ubA(i);
             }
 
-            qpOASES::SymDenseMat H_mat(H.rows(), H.cols(), H.cols(), H_qp);
+            qpOASES::SymSparseMat H_mat(H.rows(), H.cols(), H.cols(), H_qp);
+            H_mat.createDiagInfo();
             qpOASES::SparseMatrix A_mat(A.rows(), A.cols(), A.cols(), A_qp);
 
             if (first)

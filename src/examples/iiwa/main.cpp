@@ -27,14 +27,14 @@ public:
     {
         _active = true;
         auto robot = _robot.lock();
-        _solver = std::make_shared<whc::dyn::solver::IDSolver>(robot->skeleton());
+        auto skel = robot->skeleton()->cloneSkeleton();
+        _solver = std::make_shared<whc::dyn::solver::IDSolver>(skel);
         _solver->set_qp_solver<whc::qp_solver::QPOases>();
-        _config = whc::control::Configuration(robot->skeleton());
+        _config = whc::control::Configuration(skel);
         _config.add_eef("iiwa_link_ee", false); // no need for contacts
 
         _config.eef(0)->desired = _config.eef(0)->state;
         _config.eef(0)->desired.pose << -1.08292e-13, -1.0472, -4.56493e-12, -0.81926, 4.55583e-12, 0.833;
-        // _config.eef(0)->desired.pose << -1.08292e-13, -1.0472, -4.56493e-12, -0.81926, 4.55583e-12, 0.5;
         _config.eef(0)->desired.vel = Eigen::VectorXd::Zero(6);
         _config.eef(0)->desired.acc = Eigen::VectorXd::Zero(6);
     }
@@ -43,6 +43,9 @@ public:
     {
         auto robot = _robot.lock();
         _solver->clear_all();
+
+        _config.skeleton()->setPositions(robot->skeleton()->getPositions());
+        _config.skeleton()->setVelocities(robot->skeleton()->getVelocities());
         _config.update(false); // no need for contacts
 
         Eigen::VectorXd target = Eigen::VectorXd::Zero(robot->skeleton()->getNumDofs() * 2);
@@ -77,10 +80,10 @@ public:
         // double Kd = 5.;
         // target.head(robot->skeleton()->getNumDofs()) = -Kp * robot->skeleton()->getPositions() - Kd * robot->skeleton()->getVelocities();
 
-        _solver->add_task(whc::utils::make_unique<whc::dyn::task::DirectTrackingTask>(robot->skeleton(), target, gweights));
+        _solver->add_task(whc::utils::make_unique<whc::dyn::task::DirectTrackingTask>(_config.skeleton(), target, gweights));
 
-        _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::DynamicsConstraint>(robot->skeleton(), false));
-        _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::JointLimitsConstraint>(robot->skeleton()));
+        _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::DynamicsConstraint>(_config.skeleton(), false));
+        // _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::JointLimitsConstraint>(_config.skeleton()));
         _solver->solve();
 
         Eigen::VectorXd commands = _solver->solution().tail(robot->skeleton()->getNumDofs());
