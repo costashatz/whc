@@ -29,7 +29,11 @@ public:
     {
         _active = true;
         auto robot = _robot.lock();
+#if DART_VERSION_AT_LEAST(6, 7, 2)
         auto skel = robot->skeleton()->cloneSkeleton();
+#else
+        auto skel = robot->skeleton()->clone();
+#endif
         _solver = std::make_shared<whc::dyn::solver::IDSolver>(skel);
         _solver->set_qp_solver<whc::qp_solver::QPOases>();
         _prev_tau = Eigen::VectorXd::Zero(robot->skeleton()->getNumDofs());
