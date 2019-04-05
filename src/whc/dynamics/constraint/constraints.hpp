@@ -27,8 +27,8 @@ namespace whc {
 
                 std::pair<Eigen::MatrixXd, Eigen::MatrixXd> data(AbstractWhcSolver* solver) override;
 
-                Eigen::MatrixXd get_jacobian() const;
-                Eigen::MatrixXd get_force_limits() const;
+                Eigen::MatrixXd get_jacobian() const override;
+                Eigen::MatrixXd get_force_limits() const override;
 
                 size_t N() const override;
                 std::string get_type() const override;
