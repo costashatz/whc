@@ -24,7 +24,7 @@
 class QPControl : public robot_dart::control::RobotControl {
 public:
     QPControl() : robot_dart::control::RobotControl() {}
-
+    virtual ~QPControl(){}
     void configure() override
     {
         _active = true;

@@ -22,6 +22,7 @@
 class QPControl : public robot_dart::control::RobotControl {
 public:
     QPControl() : robot_dart::control::RobotControl() {}
+    virtual ~QPControl() {}
 
     void configure() override
     {
@@ -94,7 +95,7 @@ public:
         return commands;
     }
 
-    std::shared_ptr<robot_dart::control::RobotControl> clone() const
+    std::shared_ptr<robot_dart::control::RobotControl> clone() const override
     {
         return std::make_shared<QPControl>(*this);
     }
