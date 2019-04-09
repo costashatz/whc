@@ -24,7 +24,8 @@
 class QPControl : public robot_dart::control::RobotControl {
 public:
     QPControl() : robot_dart::control::RobotControl() {}
-    virtual ~QPControl(){}
+    virtual ~QPControl() {}
+
     void configure() override
     {
         _active = true;
@@ -48,6 +49,12 @@ public:
 
         _config.add_eef("r_sole"); // contacts for feet
         _config.add_eef("l_sole");
+
+        // Get positions/velocities from real robot
+        Eigen::VectorXd pos = robot->skeleton()->getPositions();
+        Eigen::VectorXd vel = robot->skeleton()->getVelocities();
+        _config.skeleton()->setPositions(pos);
+        _config.skeleton()->setVelocities(vel);
 
         _config.update(true); // update contact information as well
 
