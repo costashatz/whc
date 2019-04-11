@@ -83,26 +83,30 @@ namespace whc {
                     double d_x_min = _contact.d_x_min;
                     double d_x_max = _contact.d_x_max;
                     Eigen::MatrixXd R = _skeleton->getBodyNode(_body_name)->getTransform().linear();
+                    Eigen::VectorXd local_nx, local_ny, local_nz;
+                    local_nx = R * _contact.nx;
+                    local_ny = R * _contact.ny;
+                    local_nz = R * _contact.nz;
                     // first constraint: 0 <= -T_y^b - d_x_min*F_z^b <= max
                     A.block(5, 0, 1, 3) << -R(1, 0), -R(1, 1), -R(1, 2);
-                    A.block(5, 0, 1, 3).array() *= _contact.ny.transpose().array();
+                    A.block(5, 0, 1, 3).array() *= local_ny.transpose().array();
                     A.block(5, 3, 1, 3) << R(2, 0), R(2, 1), R(2, 2);
-                    A.block(5, 3, 1, 3).array() *= -d_x_min * _contact.nz.transpose().array();
+                    A.block(5, 3, 1, 3).array() *= -d_x_min * local_nz.transpose().array();
                     // second constraint: -max <= -T_y^b - d_x_max*F_z^b <= 0
                     A.block(6, 0, 1, 3) << -R(1, 0), -R(1, 1), -R(1, 2);
-                    A.block(6, 0, 1, 3).array() *= _contact.ny.transpose().array();
+                    A.block(6, 0, 1, 3).array() *= local_ny.transpose().array();
                     A.block(6, 3, 1, 3) << R(2, 0), R(2, 1), R(2, 2);
-                    A.block(6, 3, 1, 3).array() *= -d_x_max * _contact.nz.transpose().array();
+                    A.block(6, 3, 1, 3).array() *= -d_x_max * local_nz.transpose().array();
                     // third constraint: 0 <= T_x^b - d_y_min*F_z^b <= max
                     A.block(7, 0, 1, 3) << R(0, 0), R(0, 1), R(0, 2);
-                    A.block(7, 0, 1, 3).array() *= _contact.nx.transpose().array();
+                    A.block(7, 0, 1, 3).array() *= local_nx.transpose().array();
                     A.block(7, 3, 1, 3) << R(2, 0), R(2, 1), R(2, 2);
-                    A.block(7, 3, 1, 3).array() *= -d_y_min * _contact.nz.transpose().array();
+                    A.block(7, 3, 1, 3).array() *= -d_y_min * local_nz.transpose().array();
                     // fourth constraint: -max <= T_x^b - d_y_max*F_z^b <= 0
                     A.block(8, 0, 1, 3) << R(0, 0), R(0, 1), R(0, 2);
-                    A.block(8, 0, 1, 3).array() *= _contact.nx.transpose().array();
+                    A.block(8, 0, 1, 3).array() *= local_nx.transpose().array();
                     A.block(8, 3, 1, 3) << R(2, 0), R(2, 1), R(2, 2);
-                    A.block(8, 3, 1, 3).array() *= -d_y_max * _contact.nz.transpose().array();
+                    A.block(8, 3, 1, 3).array() *= -d_y_max * local_nz.transpose().array();
                     // fifth constraint: 0 <= T*n - muR*F*n <= max
                     A.block(9, 0, 1, 3) = _contact.nz.transpose();
                     A.block(9, 3, 1, 3) = _contact.muR * _contact.nz.transpose();
