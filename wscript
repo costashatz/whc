@@ -130,7 +130,7 @@ def build(bld):
                 source = whc_srcs + ' ' + qp_srcs,
                 includes = './src ./src/external/qpOASES/include',
                 uselib = libs,
-                cxxflags = cxxflags,
+                cxxflags = cxxflags + ['-DLINUX'],
                 target = 'whc')
 
     bld.recurse('./src/examples')
