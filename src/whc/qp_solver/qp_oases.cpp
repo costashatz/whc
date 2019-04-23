@@ -6,11 +6,12 @@
 
 namespace whc {
     namespace qp_solver {
-        QPOases::QPOases(double max_time, int max_iters) : _max_time(max_time), _max_iters(max_iters) {}
+        QPOases::QPOases(double max_time, int max_iters) : _max_time(max_time), _max_iters(max_iters), _qp_solver(nullptr) {}
+
+        QPOases::~QPOases() {}
 
         bool QPOases::solve(const Eigen::MatrixXd& H, const Eigen::VectorXd& g, const Eigen::MatrixXd& A, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub, const Eigen::VectorXd& lbA, const Eigen::VectorXd& ubA)
         {
-            static std::unique_ptr<qpOASES::SQProblem> qp_solver = nullptr;
             assert(H.rows() == H.cols());
             assert(H.rows() == g.size());
             assert(lb.size() == ub.size() && ub.size() == g.size());
@@ -20,12 +21,12 @@ namespace whc {
             size_t dim = g.size();
             size_t num_constraints = A.rows();
             bool first = false;
-            if (!qp_solver) {
-                qp_solver = std::unique_ptr<qpOASES::SQProblem>(new qpOASES::SQProblem(dim, num_constraints));
+            if (!_qp_solver) {
+                _qp_solver = std::unique_ptr<qpOASES::SQProblem>(new qpOASES::SQProblem(dim, num_constraints));
                 first = true;
             }
 
-            auto options = qp_solver->getOptions();
+            auto options = _qp_solver->getOptions();
             options.printLevel = qpOASES::PL_LOW;
             // options.enableFarBounds = qpOASES::BT_TRUE;
             // options.enableFlippingBounds = qpOASES::BT_TRUE;
@@ -36,7 +37,7 @@ namespace whc {
             options.boundTolerance = 1e-4;
             options.epsIterRef = 1e-6;
 
-            qp_solver->setOptions(options);
+            _qp_solver->setOptions(options);
             // we need this, because QPOases changes these values
             double max_time = _max_time;
             int max_iters = _max_iters;
@@ -80,9 +81,9 @@ namespace whc {
             qpOASES::returnValue ret = qpOASES::TERMINAL_LIST_ELEMENT;
 
             if (first)
-                ret = qp_solver->init(&H_mat, g_qp, &A_mat, lb_qp, ub_qp, lbA_qp, ubA_qp, max_iters);
+                ret = _qp_solver->init(&H_mat, g_qp, &A_mat, lb_qp, ub_qp, lbA_qp, ubA_qp, max_iters);
             else
-                ret = qp_solver->hotstart(&H_mat, g_qp, &A_mat, lb_qp, ub_qp, lbA_qp, ubA_qp, max_iters, &max_time);
+                ret = _qp_solver->hotstart(&H_mat, g_qp, &A_mat, lb_qp, ub_qp, lbA_qp, ubA_qp, max_iters, &max_time);
 
             delete[] H_qp;
             delete[] A_qp;
@@ -93,7 +94,7 @@ namespace whc {
             delete[] ubA_qp;
 
             _solution = Eigen::VectorXd(dim);
-            qp_solver->getPrimalSolution(_solution.data());
+            _qp_solver->getPrimalSolution(_solution.data());
 
             if (ret != qpOASES::SUCCESSFUL_RETURN)
                 return false;
