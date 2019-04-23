@@ -6,10 +6,10 @@ namespace whc {
             IKSolver::IKSolver() : AbstractWhcSolver() {}
             IKSolver::IKSolver(const dart::dynamics::SkeletonPtr& skeleton) : AbstractWhcSolver(skeleton) {}
 
-            void IKSolver::solve()
+            bool IKSolver::solve()
             {
                 _setup_matrices();
-                _solve();
+                return _solve();
             }
 
             void IKSolver::_setup_matrices()
@@ -65,12 +65,13 @@ namespace whc {
                 }
             }
 
-            void IKSolver::_solve()
+            bool IKSolver::_solve()
             {
                 if (_solver != nullptr)
-                    _solver->solve(_H, _g, _A, _lb, _ub, _lbA, _ubA);
+                    return _solver->solve(_H, _g, _A, _lb, _ub, _lbA, _ubA);
                 // else
                 // ERROR
+                return false;
             }
         } // namespace solver
     } // namespace kin

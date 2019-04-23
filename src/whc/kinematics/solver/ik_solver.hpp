@@ -16,11 +16,11 @@ namespace whc {
                 IKSolver();
                 IKSolver(const dart::dynamics::SkeletonPtr& skeleton);
 
-                void solve() override;
+                bool solve() override;
 
             protected:
                 void _setup_matrices();
-                void _solve();
+                bool _solve();
             };
         } // namespace solver
     } // namespace kin

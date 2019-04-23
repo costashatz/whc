@@ -25,7 +25,7 @@ namespace whc {
         }
 
         void clear_all();
-        virtual void solve() = 0;
+        virtual bool solve() = 0;
 
         void add_task(std::unique_ptr<AbstractTask> task);
         void add_constraint(std::unique_ptr<AbstractConstraint> constraint);

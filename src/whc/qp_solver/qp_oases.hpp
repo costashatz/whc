@@ -9,7 +9,7 @@ namespace whc {
         public:
             QPOases(double max_time = 0.005, int max_iters = 1000);
 
-            void solve(const Eigen::MatrixXd& H, const Eigen::VectorXd& g, const Eigen::MatrixXd& A, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub, const Eigen::VectorXd& lbA, const Eigen::VectorXd& ubA) override;
+            bool solve(const Eigen::MatrixXd& H, const Eigen::VectorXd& g, const Eigen::MatrixXd& A, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub, const Eigen::VectorXd& lbA, const Eigen::VectorXd& ubA) override;
             Eigen::VectorXd get_solution() const override;
 
             void set_max_time(double max_time);

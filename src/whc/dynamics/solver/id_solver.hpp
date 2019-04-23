@@ -16,7 +16,7 @@ namespace whc {
                 IDSolver();
                 IDSolver(const dart::dynamics::SkeletonPtr& skeleton);
 
-                void solve() override;
+                bool solve() override;
 
                 template <typename... Args>
                 void add_contact(double weight, const std::string& body_name, Args... args)
@@ -35,7 +35,7 @@ namespace whc {
 
             protected:
                 void _setup_matrices();
-                void _solve();
+                bool _solve();
             };
         } // namespace solver
     } // namespace dyn

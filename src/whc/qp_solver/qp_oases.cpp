@@ -8,7 +8,7 @@ namespace whc {
     namespace qp_solver {
         QPOases::QPOases(double max_time, int max_iters) : _max_time(max_time), _max_iters(max_iters) {}
 
-        void QPOases::solve(const Eigen::MatrixXd& H, const Eigen::VectorXd& g, const Eigen::MatrixXd& A, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub, const Eigen::VectorXd& lbA, const Eigen::VectorXd& ubA)
+        bool QPOases::solve(const Eigen::MatrixXd& H, const Eigen::VectorXd& g, const Eigen::MatrixXd& A, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub, const Eigen::VectorXd& lbA, const Eigen::VectorXd& ubA)
         {
             static std::unique_ptr<qpOASES::SQProblem> qp_solver = nullptr;
             assert(H.rows() == H.cols());
@@ -77,10 +77,12 @@ namespace whc {
             H_mat.createDiagInfo();
             qpOASES::SparseMatrix A_mat(A.rows(), A.cols(), A.cols(), A_qp);
 
+            qpOASES::returnValue ret = qpOASES::TERMINAL_LIST_ELEMENT;
+
             if (first)
-                qp_solver->init(&H_mat, g_qp, &A_mat, lb_qp, ub_qp, lbA_qp, ubA_qp, max_iters);
+                ret = qp_solver->init(&H_mat, g_qp, &A_mat, lb_qp, ub_qp, lbA_qp, ubA_qp, max_iters);
             else
-                qp_solver->hotstart(&H_mat, g_qp, &A_mat, lb_qp, ub_qp, lbA_qp, ubA_qp, max_iters, &max_time);
+                ret = qp_solver->hotstart(&H_mat, g_qp, &A_mat, lb_qp, ub_qp, lbA_qp, ubA_qp, max_iters, &max_time);
 
             delete[] H_qp;
             delete[] A_qp;
@@ -92,6 +94,10 @@ namespace whc {
 
             _solution = Eigen::VectorXd(dim);
             qp_solver->getPrimalSolution(_solution.data());
+
+            if (ret != qpOASES::SUCCESSFUL_RETURN)
+                return false;
+            return true;
         }
 
         Eigen::VectorXd QPOases::get_solution() const
