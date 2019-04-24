@@ -11,7 +11,7 @@ namespace whc {
     namespace qp_solver {
         class QPOases : public AbstractQP {
         public:
-            QPOases(double max_time = 0.005, int max_iters = 1000);
+            QPOases(double max_time = 0.005, int max_iters = 1000, bool verbose = true);
             virtual ~QPOases();
 
             bool solve(const Eigen::MatrixXd& H, const Eigen::VectorXd& g, const Eigen::MatrixXd& A, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub, const Eigen::VectorXd& lbA, const Eigen::VectorXd& ubA) override;
@@ -23,10 +23,14 @@ namespace whc {
             void set_max_iters(int max_iters);
             double get_max_iters() const;
 
+            void set_verbose(bool enable = true);
+            bool get_verbose() const;
+
         protected:
             Eigen::VectorXd _solution;
             double _max_time;
             int _max_iters;
+            bool _verbose;
             std::unique_ptr<qpOASES::SQProblem> _qp_solver;
         };
     } // namespace qp_solver

@@ -6,7 +6,7 @@
 
 namespace whc {
     namespace qp_solver {
-        QPOases::QPOases(double max_time, int max_iters) : _max_time(max_time), _max_iters(max_iters), _qp_solver(nullptr) {}
+        QPOases::QPOases(double max_time, int max_iters, bool verbose) : _max_time(max_time), _max_iters(max_iters), _verbose(verbose), _qp_solver(nullptr) {}
 
         QPOases::~QPOases() {}
 
@@ -27,7 +27,9 @@ namespace whc {
             }
 
             auto options = _qp_solver->getOptions();
-            options.printLevel = qpOASES::PL_LOW;
+            options.printLevel = qpOASES::PL_NONE;
+            if (_verbose)
+                options.printLevel = qpOASES::PL_LOW;
             // options.enableFarBounds = qpOASES::BT_TRUE;
             // options.enableFlippingBounds = qpOASES::BT_TRUE;
             options.enableRamping = qpOASES::BT_FALSE;
@@ -124,6 +126,16 @@ namespace whc {
         double QPOases::get_max_iters() const
         {
             return _max_iters;
+        }
+
+        void QPOases::set_verbose(bool enable)
+        {
+            _verbose = enable;
+        }
+
+        bool QPOases::get_verbose() const
+        {
+            return _verbose;
         }
     } // namespace qp_solver
 } // namespace whc
