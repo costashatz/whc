@@ -8,7 +8,7 @@
 #endif
 
 #include <dart/collision/CollisionObject.hpp>
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/constraint/ConstraintSolver.hpp>
 
 #include <whc/control/configuration.hpp>
@@ -127,6 +127,9 @@ public:
 
     Eigen::VectorXd calculate(double t) override
     {
+        static double t0 = t;
+        static bool f = true;
+        double w = 100.;
         auto robot = _robot.lock();
         _config.skeleton()->setPositions(robot->skeleton()->getPositions());
         _config.skeleton()->setVelocities(robot->skeleton()->getVelocities());
@@ -135,6 +138,22 @@ public:
         _solver->clear_all();
         Eigen::VectorXd target = Eigen::VectorXd::Zero(robot->skeleton()->getNumDofs() * 2 + 2 * 6);
         // target.segment(robot->skeleton()->getNumDofs(), robot->skeleton()->getNumDofs()).tail(_control_dof) = robot->skeleton()->getCoriolisAndGravityForces().tail(_control_dof);
+
+        if ((t - t0 > 10.) && f) {
+            _config.eef("root_link")->desired.pose.tail(3)[2] += 0.15;
+            _config.eef("root_link")->desired.pose.tail(3)[0] -= 0.12;
+
+            _config.eef("r_hand")->desired.pose.tail(3)[2] += 0.1;
+            _config.eef("r_hand")->desired.pose.tail(3)[0] -= 0.02;
+            _config.eef("l_hand")->desired.pose.tail(3)[2] += 0.1;
+            _config.eef("l_hand")->desired.pose.tail(3)[0] -= 0.02;
+
+            f = false;
+        }
+
+        // if (!f) {
+        //     w = 10.;
+        // }
 
         // whc::control::PDGains gains;
         // gains.kp = Eigen::VectorXd::Constant(6, 50.);
@@ -145,9 +164,9 @@ public:
         // Add accelerations tasks for end-effectors
         for (size_t i = 0; i < _config.num_eefs(); i++) {
             whc::control::PDGains gains;
-            gains.kp = Eigen::VectorXd::Constant(6, 100.);
+            gains.kp = Eigen::VectorXd::Constant(6, w);
             // gains.kp.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
-            gains.kd = Eigen::VectorXd::Constant(6, 100.);
+            gains.kd = Eigen::VectorXd::Constant(6, w);
             // gains.kd.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
 
             auto eef = _config.eef(i);
@@ -178,9 +197,9 @@ public:
                 // auto bd = _config.skeleton()->getBodyNode(eef->body_name);
                 // Eigen::Matrix3d bd_trans = bd->getWorldTransform().linear();
                 // acc.head(3) = bd_trans * acc.head(3);
-                gains.kp = Eigen::VectorXd::Constant(6, 10.);
+                // gains.kp = Eigen::VectorXd::Constant(6, 10.);
                 // gains.kp.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
-                gains.kd = Eigen::VectorXd::Constant(6, 10.);
+                // gains.kd = Eigen::VectorXd::Constant(6, 10.);
                 // gains.kd.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
             }
             // if (eef->body_name == "root_link") {
@@ -215,23 +234,23 @@ public:
         }
         // std::cout << "-------------------" << std::endl;
 
-        // // Add COM acceleration task
-        // whc::utils::Frame state;
-        // state.pose = Eigen::VectorXd::Zero(6);
-        // state.vel = Eigen::VectorXd::Zero(6);
-        // state.acc = Eigen::VectorXd::Zero(6);
-        // whc::utils::ControlFrame desired = state;
-        // whc::control::PDGains gains;
-        // gains.kp = Eigen::VectorXd::Constant(6, 0.); // no position control
-        // gains.kd = Eigen::VectorXd::Constant(6, 5.);
-        // // gains.kd.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
-        // state.vel = robot->skeleton()->getCOMSpatialVelocity();
-        // Eigen::VectorXd com_acc = whc::control::feedback(state, desired, gains);
-        // // std::cout << state.vel.transpose() << std::endl;
-        // // std::cout << com_acc.transpose() << std::endl;
-        // // std::cout << "----" << std::endl;
-        // // com_acc = Eigen::VectorXd::Zero(6);
-        // _solver->add_task(whc::utils::make_unique<whc::dyn::task::COMAccelerationTask>(robot->skeleton(), com_acc, 100.));
+        // Add COM acceleration task
+        whc::utils::Frame state;
+        state.pose = Eigen::VectorXd::Zero(6);
+        state.vel = Eigen::VectorXd::Zero(6);
+        state.acc = Eigen::VectorXd::Zero(6);
+        whc::utils::ControlFrame desired = state;
+        whc::control::PDGains gains;
+        gains.kp = Eigen::VectorXd::Constant(6, 0.); // no position control
+        gains.kd = Eigen::VectorXd::Constant(6, 100.);
+        // gains.kd.head(3) = Eigen::VectorXd::Zero(3); // no orientation control
+        state.vel = robot->skeleton()->getCOMSpatialVelocity();
+        Eigen::VectorXd com_acc = whc::control::feedback(state, desired, gains);
+        // std::cout << state.vel.transpose() << std::endl;
+        // std::cout << com_acc.transpose() << std::endl;
+        // std::cout << "----" << std::endl;
+        // com_acc = Eigen::VectorXd::Zero(6);
+        _solver->add_task(whc::utils::make_unique<whc::dyn::task::COMAccelerationTask>(robot->skeleton(), com_acc, 80.));
 
         // Add regularization task
         Eigen::VectorXd gweights = Eigen::VectorXd::Constant(target.size(), 0.01);
@@ -357,7 +376,7 @@ int main()
     // icub_robot->skeleton()->getJoint("torso_roll")->setPosition(0, 0.25);
 
     robot_dart::RobotDARTSimu simu(0.005);
-    simu.world()->getConstraintSolver()->setCollisionDetector(dart::collision::BulletCollisionDetector::create());
+    simu.world()->getConstraintSolver()->setCollisionDetector(dart::collision::FCLCollisionDetector::create());
 #ifdef GRAPHIC
     simu.set_graphics(std::make_shared<robot_dart::graphics::Graphics>(simu.world()));
 #endif

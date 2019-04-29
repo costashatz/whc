@@ -13,12 +13,10 @@ namespace whc {
                 AccelerationTask(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights);
 
                 std::pair<Eigen::MatrixXd, Eigen::VectorXd> get_costs() override;
-
                 std::string get_type() const override;
 
             protected:
                 std::string _body_name;
-                Eigen::VectorXd _desired_accelerations;
 
                 Eigen::MatrixXd _jacobian, _jacobian_deriv;
                 Eigen::VectorXd _dq;
@@ -33,13 +31,9 @@ namespace whc {
                 COMAccelerationTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights);
 
                 std::pair<Eigen::MatrixXd, Eigen::VectorXd> get_costs() override;
-
                 std::string get_type() const override;
 
             protected:
-                std::string _body_name;
-                Eigen::VectorXd _desired_accelerations;
-
                 Eigen::MatrixXd _jacobian, _jacobian_deriv;
                 Eigen::VectorXd _dq;
 
@@ -53,11 +47,7 @@ namespace whc {
                 DirectTrackingTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights);
 
                 std::pair<Eigen::MatrixXd, Eigen::VectorXd> get_costs() override;
-
                 std::string get_type() const override;
-
-            protected:
-                Eigen::VectorXd _desired_values;
             };
 
             class TauDiffTask : public AbstractTask {
@@ -68,23 +58,20 @@ namespace whc {
 
                 std::pair<Eigen::MatrixXd, Eigen::VectorXd> get_costs() override;
                 std::string get_type() const override;
-
-            protected:
-                Eigen::VectorXd _prev_tau;
             };
 
             class PostureTask : public AbstractTask {
             public:
-                PostureTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, double weight = 1.)
-                    : PostureTask(skeleton, desired, Eigen::VectorXd::Constant(desired.size(), weight)) {}
-                PostureTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights);
+                PostureTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, double weight = 1., bool floating_base = true)
+                    : PostureTask(skeleton, desired, Eigen::VectorXd::Constant(desired.size(), weight), floating_base) {}
+                PostureTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights, bool floating_base = true);
 
                 std::pair<Eigen::MatrixXd, Eigen::VectorXd> get_costs() override;
-
                 std::string get_type() const override;
+                bool check_consistency() const override;
 
             protected:
-                Eigen::VectorXd _desired_values;
+                bool _floating_base;
             };
         } // namespace task
     } // namespace dyn

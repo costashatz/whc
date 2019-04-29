@@ -7,7 +7,7 @@
 #endif
 
 #include <dart/collision/CollisionObject.hpp>
-#include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/constraint/ConstraintSolver.hpp>
 #include <dart/dynamics/DegreeOfFreedom.hpp>
 
@@ -47,7 +47,7 @@ public:
     Eigen::VectorXd calculate(double) override
     {
         auto robot = _robot.lock();
-        _solver->clear_all();
+        // _solver->clear_all();
 
         _config.skeleton()->setPositions(robot->skeleton()->getPositions());
         _config.skeleton()->setVelocities(robot->skeleton()->getVelocities());
@@ -76,19 +76,22 @@ public:
         // std::cout << "vel: " << eef->state.vel.transpose() << std::endl;
         // std::cout << "control: " << acc.transpose() << std::endl;
         // std::cout << "-------------------" << std::endl;
-        _solver->add_task(whc::utils::make_unique<whc::dyn::task::AccelerationTask>(_config.skeleton(), "iiwa_link_ee", acc, weights));
+        if (_solver->tasks().size() == 0) {
+            _solver->add_task(whc::utils::make_unique<whc::dyn::task::AccelerationTask>(_config.skeleton(), "iiwa_link_ee", acc, weights));
 
-        Eigen::VectorXd gweights = Eigen::VectorXd::Constant(target.size(), 0.001);
-        // This is important for stability
-        gweights.head(robot->skeleton()->getNumDofs()) = Eigen::VectorXd::Constant(robot->skeleton()->getNumDofs(), 0.1);
-        // double Kp = 5.;
-        // double Kd = 5.;
-        // target.head(robot->skeleton()->getNumDofs()) = -Kp * robot->skeleton()->getPositions() - Kd * robot->skeleton()->getVelocities();
+            Eigen::VectorXd gweights = Eigen::VectorXd::Constant(target.size(), 0.001);
+            // This is important for stability
+            gweights.head(robot->skeleton()->getNumDofs()) = Eigen::VectorXd::Constant(robot->skeleton()->getNumDofs(), 0.1);
+            // double Kp = 5.;
+            // double Kd = 5.;
+            // target.head(robot->skeleton()->getNumDofs()) = -Kp * robot->skeleton()->getPositions() - Kd * robot->skeleton()->getVelocities();
 
-        _solver->add_task(whc::utils::make_unique<whc::dyn::task::DirectTrackingTask>(_config.skeleton(), target, gweights));
+            _solver->add_task(whc::utils::make_unique<whc::dyn::task::DirectTrackingTask>(_config.skeleton(), target, gweights));
 
-        _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::DynamicsConstraint>(_config.skeleton(), false));
-        // _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::JointLimitsConstraint>(_config.skeleton()));
+            _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::DynamicsConstraint>(_config.skeleton(), false));
+            // _solver->add_constraint(whc::utils::make_unique<whc::dyn::constraint::JointLimitsConstraint>(_config.skeleton()));
+        }
+        _solver->tasks()[0]->set_desired(acc);
         _solver->solve();
 
         Eigen::VectorXd commands = _solver->solution().tail(robot->skeleton()->getNumDofs());
@@ -109,6 +112,8 @@ int main()
 {
     std::vector<std::pair<std::string, std::string>> packages = {{"iiwa_description", std::string(RESPATH)}};
     auto arm = std::make_shared<robot_dart::Robot>(std::string(RESPATH) + "/iiwa14.urdf", packages);
+    arm->free_from_world();
+    arm->skeleton()->setPosition(5, 0.0001);
     arm->fix_to_world();
     arm->set_position_enforced(true);
     arm->skeleton()->disableSelfCollisionCheck();
@@ -122,7 +127,7 @@ int main()
     arm->add_controller(std::make_shared<QPControl>());
 
     robot_dart::RobotDARTSimu simu(0.005);
-    simu.world()->getConstraintSolver()->setCollisionDetector(dart::collision::BulletCollisionDetector::create());
+    simu.world()->getConstraintSolver()->setCollisionDetector(dart::collision::FCLCollisionDetector::create());
 #ifdef GRAPHIC
     simu.set_graphics(std::make_shared<robot_dart::graphics::Graphics>(simu.world()));
 #endif

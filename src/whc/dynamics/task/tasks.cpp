@@ -7,7 +7,7 @@ namespace whc {
         namespace task {
             // AccelerationTask
             AccelerationTask::AccelerationTask(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights)
-                : AbstractTask(skeleton, weights), _body_name(body_name), _desired_accelerations(desired) { assert(weights.size() == desired.size()); }
+                : AbstractTask(skeleton, desired, weights), _body_name(body_name) { assert(check_consistency()); }
 
             std::pair<Eigen::MatrixXd, Eigen::VectorXd> AccelerationTask::get_costs()
             {
@@ -17,7 +17,7 @@ namespace whc {
                 Eigen::MatrixXd A = _jacobian;
                 for (int i = 0; i < A.rows(); i++)
                     A.row(i).array() *= _weights[i];
-                Eigen::VectorXd b = (_desired_accelerations - _jacobian_deriv * _dq).array() * _weights.array();
+                Eigen::VectorXd b = (_desired - _jacobian_deriv * _dq).array() * _weights.array();
 
                 return std::make_pair(A, b);
             }
@@ -41,7 +41,7 @@ namespace whc {
 
             // COMAccelerationTask
             COMAccelerationTask::COMAccelerationTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights)
-                : AbstractTask(skeleton, weights), _desired_accelerations(desired) { assert(weights.size() == desired.size()); }
+                : AbstractTask(skeleton, desired, weights) { assert(check_consistency()); }
 
             std::pair<Eigen::MatrixXd, Eigen::VectorXd> COMAccelerationTask::get_costs()
             {
@@ -51,7 +51,7 @@ namespace whc {
                 Eigen::MatrixXd A = _jacobian;
                 for (int i = 0; i < A.rows(); i++)
                     A.row(i).array() *= _weights[i];
-                Eigen::VectorXd b = (_desired_accelerations - _jacobian_deriv * _dq).array() * _weights.array();
+                Eigen::VectorXd b = (_desired - _jacobian_deriv * _dq).array() * _weights.array();
 
                 return std::make_pair(A, b);
             }
@@ -71,14 +71,14 @@ namespace whc {
 
             // DirectTrackingTask
             DirectTrackingTask::DirectTrackingTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights)
-                : AbstractTask(skeleton, weights), _desired_values(desired) { assert(weights.size() == desired.size()); }
+                : AbstractTask(skeleton, desired, weights) { assert(check_consistency()); }
 
             std::pair<Eigen::MatrixXd, Eigen::VectorXd> DirectTrackingTask::get_costs()
             {
                 // Assumes desired values to be same size of optimization variables
-                Eigen::MatrixXd A = Eigen::MatrixXd::Identity(_desired_values.size(), _desired_values.size());
+                Eigen::MatrixXd A = Eigen::MatrixXd::Identity(_desired.size(), _desired.size());
                 A.diagonal().array() *= _weights.array();
-                Eigen::VectorXd b = _desired_values.array() * _weights.array();
+                Eigen::VectorXd b = _desired.array() * _weights.array();
 
                 return std::make_pair(A, b);
             }
@@ -90,7 +90,7 @@ namespace whc {
 
             // TauDiffTask
             TauDiffTask::TauDiffTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& prev_tau, const Eigen::VectorXd& weights)
-                : AbstractTask(skeleton, weights), _prev_tau(prev_tau) { assert(weights.size() == prev_tau.size()); }
+                : AbstractTask(skeleton, prev_tau, weights) { assert(check_consistency()); }
 
             std::pair<Eigen::MatrixXd, Eigen::VectorXd> TauDiffTask::get_costs()
             {
@@ -101,7 +101,7 @@ namespace whc {
                 A.diagonal().tail(dofs) = Eigen::VectorXd::Ones(dofs);
                 A.diagonal().array() *= _weights.array();
                 Eigen::VectorXd b = Eigen::VectorXd::Zero(2 * dofs);
-                b.tail(dofs) = _prev_tau;
+                b.tail(dofs) = _desired;
                 b.array() *= _weights.array();
 
                 return std::make_pair(A, b);
@@ -113,26 +113,26 @@ namespace whc {
             }
 
             // PostureTask
-            PostureTask::PostureTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights)
-                : AbstractTask(skeleton, weights), _desired_values(desired)
-            {
-                assert(weights.size() == desired.size());
-                assert(skeleton->getNumDofs() == static_cast<size_t>(desired.size()));
-            }
+            PostureTask::PostureTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights, bool floating_base)
+                : AbstractTask(skeleton, desired, weights), _floating_base(floating_base) { assert(check_consistency()); }
 
             std::pair<Eigen::MatrixXd, Eigen::VectorXd> PostureTask::get_costs()
             {
                 size_t dofs = _skeleton->getNumDofs();
+                size_t length = dofs;
+                if (_floating_base)
+                    length -= 6;
                 double dt = _skeleton->getTimeStep();
-                Eigen::VectorXd dq = _skeleton->getVelocities();
-                Eigen::VectorXd q = _skeleton->getPositions();
+                Eigen::VectorXd dq = _skeleton->getVelocities().tail(length);
+                Eigen::VectorXd q = _skeleton->getPositions().tail(length);
 
                 // Assumes desired values to be same size of dofs
                 Eigen::MatrixXd A = Eigen::MatrixXd::Zero(dofs, dofs);
-                A.diagonal() = Eigen::VectorXd::Constant(dofs, dt * dt);
-                A.diagonal().array() *= _weights.array();
-                Eigen::VectorXd b = -(dq * dt + q) + _desired_values;
-                b = b.array() * _weights.array();
+                A.diagonal().tail(length) = Eigen::VectorXd::Constant(length, dt * dt);
+                A.diagonal().tail(length).array() *= _weights.array();
+                Eigen::VectorXd b = Eigen::VectorXd::Zero(dofs);
+                b.tail(length) = -(dq * dt + q) + _desired;
+                b.tail(length).array() *= _weights.array();
 
                 return std::make_pair(A, b);
             }
@@ -140,6 +140,18 @@ namespace whc {
             std::string PostureTask::get_type() const
             {
                 return "posture";
+            }
+
+            bool PostureTask::check_consistency() const
+            {
+                if (!((_weights.size() == _desired.size()) || _weights.size() == 0 || _desired.size() == 0))
+                    return false;
+                size_t dofs = _skeleton->getNumDofs();
+                if (_floating_base)
+                    dofs -= 6;
+                if (dofs != static_cast<size_t>(_desired.size()))
+                    return false;
+                return true;
             }
         } // namespace task
     } // namespace dyn

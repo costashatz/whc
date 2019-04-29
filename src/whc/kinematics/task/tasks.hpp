@@ -13,12 +13,10 @@ namespace whc {
                 VelocityTask(const dart::dynamics::SkeletonPtr& skeleton, const std::string& body_name, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights);
 
                 std::pair<Eigen::MatrixXd, Eigen::VectorXd> get_costs() override;
-
                 std::string get_type() const override;
 
             protected:
                 std::string _body_name;
-                Eigen::VectorXd _desired_velocities;
 
                 Eigen::MatrixXd _jacobian;
 
@@ -32,11 +30,7 @@ namespace whc {
                 DirectTrackingTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights);
 
                 std::pair<Eigen::MatrixXd, Eigen::VectorXd> get_costs() override;
-
                 std::string get_type() const override;
-
-            protected:
-                Eigen::VectorXd _desired_values;
             };
 
             class VelDiffTask : public AbstractTask {
@@ -47,9 +41,6 @@ namespace whc {
 
                 std::pair<Eigen::MatrixXd, Eigen::VectorXd> get_costs() override;
                 std::string get_type() const override;
-
-            protected:
-                Eigen::VectorXd _prev_vel;
             };
         } // namespace task
     } // namespace kin
