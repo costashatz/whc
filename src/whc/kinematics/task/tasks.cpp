@@ -34,6 +34,31 @@ namespace whc {
                 _jacobian = _skeleton->getWorldJacobian(bd);
             }
 
+            // COMVelocityTask
+            COMVelocityTask::COMVelocityTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights)
+                : AbstractTask(skeleton, desired, weights) { assert(check_consistency()); }
+
+            std::pair<Eigen::MatrixXd, Eigen::VectorXd> COMVelocityTask::get_costs()
+            {
+                _calculate_jacobian();
+                Eigen::MatrixXd A = _jacobian;
+                for (int i = 0; i < A.rows(); i++)
+                    A.row(i).array() *= _weights[i];
+                Eigen::VectorXd b = _desired.array() * _weights.array();
+
+                return std::make_pair(A, b);
+            }
+
+            std::string COMVelocityTask::get_type() const
+            {
+                return "com_velocity";
+            }
+
+            void COMVelocityTask::_calculate_jacobian()
+            {
+                _jacobian = _skeleton->getCOMJacobian();
+            }
+
             // DirectTrackingTask
             DirectTrackingTask::DirectTrackingTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights)
                 : AbstractTask(skeleton, desired, weights) { assert(check_consistency()); }
