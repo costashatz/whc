@@ -68,14 +68,17 @@ public:
         _init_pos = robot->skeleton()->getPositions().tail(robot->skeleton()->getNumDofs() - 6);
         _init_com = robot->skeleton()->getCOM();
 
-        _config.eef("root_link")->desired.pose.tail(3)[2] -= 0.15;
-        // _config.eef("root_link")->desired.pose.tail(3)[2] -= 0.25;
-        _config.eef("root_link")->desired.pose.tail(3)[0] += 0.12;
+        _init_com[0] += 0.04;
+        _init_com[2] -= 0.1;
 
-        // _config.eef("r_hand")->desired.pose.tail(3)[2] -= 0.1;
-        // _config.eef("r_hand")->desired.pose.tail(3)[0] += 0.02;
-        // _config.eef("l_hand")->desired.pose.tail(3)[2] -= 0.1;
-        // _config.eef("l_hand")->desired.pose.tail(3)[0] += 0.02;
+        // _config.eef("root_link")->desired.pose.tail(3)[2] -= 0.15;
+        // _config.eef("root_link")->desired.pose.tail(3)[2] -= 0.25;
+        // _config.eef("root_link")->desired.pose.tail(3)[0] += 0.12;
+
+        _config.eef("r_hand")->desired.pose.tail(3)[2] -= 0.1;
+        _config.eef("r_hand")->desired.pose.tail(3)[0] += 0.02;
+        _config.eef("l_hand")->desired.pose.tail(3)[2] -= 0.1;
+        _config.eef("l_hand")->desired.pose.tail(3)[0] += 0.02;
     }
 
     Eigen::VectorXd calculate(double t) override
@@ -88,16 +91,18 @@ public:
         _config.update(true); // update contact information as well
 
         _solver->clear_all();
-        Eigen::VectorXd target = Eigen::VectorXd::Zero(robot->skeleton()->getNumDofs());
 
         if ((t - t0 > 10.) && f) {
-            _config.eef("root_link")->desired.pose.tail(3)[2] += 0.15;
-            _config.eef("root_link")->desired.pose.tail(3)[0] -= 0.12;
+            // _config.eef("root_link")->desired.pose.tail(3)[2] += 0.15;
+            // _config.eef("root_link")->desired.pose.tail(3)[0] -= 0.12;
 
-            // _config.eef("r_hand")->desired.pose.tail(3)[2] += 0.1;
-            // _config.eef("r_hand")->desired.pose.tail(3)[0] -= 0.02;
-            // _config.eef("l_hand")->desired.pose.tail(3)[2] += 0.1;
-            // _config.eef("l_hand")->desired.pose.tail(3)[0] -= 0.02;
+            _init_com[0] -= 0.04;
+            _init_com[2] += 0.1;
+
+            _config.eef("r_hand")->desired.pose.tail(3)[2] += 0.1;
+            _config.eef("r_hand")->desired.pose.tail(3)[0] -= 0.02;
+            _config.eef("l_hand")->desired.pose.tail(3)[2] += 0.1;
+            _config.eef("l_hand")->desired.pose.tail(3)[0] -= 0.02;
 
             f = false;
         }
@@ -109,25 +114,27 @@ public:
             Eigen::VectorXd pos_error = eef->desired.pose - eef->state.pose;
             pos_error.head(3) = whc::utils::rotation_error(dart::math::expMapRot(eef->desired.pose.head(3)), dart::math::expMapRot(eef->state.pose.head(3)));
 
-            Eigen::VectorXd w = Eigen::VectorXd::Ones(6);
+            Eigen::VectorXd w = Eigen::VectorXd::Constant(6, 1.);
             if (eef->body_name == "chest" || eef->body_name == "head")
                 w.tail(3).setZero();
-            if (eef->body_name == "root_link")
-                w.array() *= 2.;
+            if (eef->body_name == "root_link") // since we are controlling the COM positioning, we ignore the position of the root_link
+                w.tail(3).setZero();
 
             _solver->add_task(whc::utils::make_unique<whc::kin::task::VelocityTask>(_config.skeleton(), eef->body_name, pos_error, w));
         }
 
-        // // COM Velocity task
-        // Eigen::VectorXd pos_error = Eigen::VectorXd::Zero(6);
-        // pos_error.tail(3) = _init_com - _config.skeleton()->getCOM();
-        // Eigen::VectorXd w = Eigen::VectorXd::Zero(6);
-        // w(3) = 0.5;
-        // w(4) = 0.5;
-        // _solver->add_task(whc::utils::make_unique<whc::kin::task::COMVelocityTask>(_config.skeleton(), pos_error, w));
+        // COM Velocity task
+        Eigen::VectorXd pos_error = Eigen::VectorXd::Zero(6);
+        pos_error.tail(3) = _init_com - _config.skeleton()->getCOM();
+        Eigen::VectorXd w = Eigen::VectorXd::Zero(6);
+        w(3) = 1.;
+        w(4) = 1.;
+        w(5) = 1.;
+        _solver->add_task(whc::utils::make_unique<whc::kin::task::COMVelocityTask>(_config.skeleton(), pos_error, w));
 
         // Add regularization task
-        Eigen::VectorXd gweights = Eigen::VectorXd::Constant(target.size(), 0.01);
+        Eigen::VectorXd target = Eigen::VectorXd::Zero(robot->skeleton()->getNumDofs());
+        Eigen::VectorXd gweights = Eigen::VectorXd::Constant(target.size(), 0.025);
 
         _solver->add_task(whc::utils::make_unique<whc::kin::task::DirectTrackingTask>(_config.skeleton(), target, gweights));
 
@@ -155,17 +162,7 @@ protected:
 
 void stabilize_robot(const std::shared_ptr<robot_dart::Robot>& robot, robot_dart::RobotDARTSimu& simu)
 {
-    std::vector<double> target(robot->skeleton()->getNumDofs() - 6);
-
-    Eigen::VectorXd::Map(target.data(), target.size()) = robot->skeleton()->getPositions().tail(robot->skeleton()->getNumDofs() - 6);
-
-    robot->add_controller(std::make_shared<robot_dart::control::PDControl>(target));
-    // std::static_pointer_cast<robot_dart::control::PDControl>(robot->controller(0))->set_pd(200., 10.);
-    std::static_pointer_cast<robot_dart::control::PDControl>(robot->controller(0))->set_pd(1000., 10.);
-
     simu.run(3.);
-
-    robot->clear_controllers();
 }
 
 int main()
@@ -191,8 +188,8 @@ int main()
 
     lb = lb.unaryExpr([](double x) {if(x<-84.) return -84.; return x; });
     ub = ub.unaryExpr([](double x) {if(x>84.) return 84.; return x; });
-    lb.head(6) = Eigen::VectorXd::Zero(6);
-    ub.head(6) = Eigen::VectorXd::Zero(6);
+    // lb.head(6) = Eigen::VectorXd::Zero(6);
+    // ub.head(6) = Eigen::VectorXd::Zero(6);
     icub_robot->skeleton()->setForceLowerLimits(lb);
     icub_robot->skeleton()->setForceUpperLimits(ub);
 
@@ -201,8 +198,8 @@ int main()
 
     lb = lb.unaryExpr([](double x) {if(x<-100.) return -100.; return x; });
     ub = ub.unaryExpr([](double x) {if(x>100.) return 100.; return x; });
-    lb.head(6) = Eigen::VectorXd::Zero(6);
-    ub.head(6) = Eigen::VectorXd::Zero(6);
+    // lb.head(6) = Eigen::VectorXd::Zero(6);
+    // ub.head(6) = Eigen::VectorXd::Zero(6);
     icub_robot->skeleton()->setVelocityLowerLimits(lb);
     icub_robot->skeleton()->setVelocityLowerLimits(ub);
 
@@ -231,9 +228,9 @@ int main()
     simu.add_floor();
 
     // first stabilize the robot
-    // stabilize_robot(icub_robot, simu);
+    stabilize_robot(icub_robot, simu);
 
-    // std::cout << "Stabilized robot!" << std::endl;
+    std::cout << "Stabilized robot!" << std::endl;
 
     icub_robot->add_controller(std::make_shared<QPControl>());
 

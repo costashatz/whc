@@ -344,8 +344,8 @@ int main()
 
     lb = lb.unaryExpr([](double x) {if(x<-84.) return -84.; return x; });
     ub = ub.unaryExpr([](double x) {if(x>84.) return 84.; return x; });
-    lb.head(6) = Eigen::VectorXd::Zero(6);
-    ub.head(6) = Eigen::VectorXd::Zero(6);
+    // lb.head(6) = Eigen::VectorXd::Zero(6);
+    // ub.head(6) = Eigen::VectorXd::Zero(6);
     icub_robot->skeleton()->setForceLowerLimits(lb);
     icub_robot->skeleton()->setForceUpperLimits(ub);
 
@@ -354,8 +354,8 @@ int main()
 
     lb = lb.unaryExpr([](double x) {if(x<-100.) return -100.; return x; });
     ub = ub.unaryExpr([](double x) {if(x>100.) return 100.; return x; });
-    lb.head(6) = Eigen::VectorXd::Zero(6);
-    ub.head(6) = Eigen::VectorXd::Zero(6);
+    // lb.head(6) = Eigen::VectorXd::Zero(6);
+    // ub.head(6) = Eigen::VectorXd::Zero(6);
     icub_robot->skeleton()->setVelocityLowerLimits(lb);
     icub_robot->skeleton()->setVelocityLowerLimits(ub);
 
