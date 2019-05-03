@@ -127,9 +127,7 @@ public:
         Eigen::VectorXd pos_error = Eigen::VectorXd::Zero(6);
         pos_error.tail(3) = _init_com - _config.skeleton()->getCOM();
         Eigen::VectorXd w = Eigen::VectorXd::Zero(6);
-        w(3) = 1.;
-        w(4) = 1.;
-        w(5) = 1.;
+        w.tail(3).setOnes();
         _solver->add_task(whc::utils::make_unique<whc::kin::task::COMVelocityTask>(_config.skeleton(), pos_error, w));
 
         // Add regularization task
