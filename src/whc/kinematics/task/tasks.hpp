@@ -23,6 +23,21 @@ namespace whc {
                 void _calculate_jacobian();
             };
 
+            class COMVelocityTask : public AbstractTask {
+            public:
+                COMVelocityTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, double weight = 1.)
+                    : COMVelocityTask(skeleton, desired, Eigen::VectorXd::Constant(desired.size(), weight)) {}
+                COMVelocityTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, const Eigen::VectorXd& weights);
+
+                std::pair<Eigen::MatrixXd, Eigen::VectorXd> get_costs() override;
+                std::string get_type() const override;
+
+            protected:
+                Eigen::MatrixXd _jacobian;
+
+                void _calculate_jacobian();
+            };
+
             class DirectTrackingTask : public AbstractTask {
             public:
                 DirectTrackingTask(const dart::dynamics::SkeletonPtr& skeleton, const Eigen::VectorXd& desired, double weight = 1.)
