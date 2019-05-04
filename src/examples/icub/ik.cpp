@@ -68,12 +68,12 @@ public:
         _init_pos = robot->skeleton()->getPositions().tail(robot->skeleton()->getNumDofs() - 6);
         _init_com = robot->skeleton()->getCOM();
 
-        _init_com[0] += 0.04;
-        _init_com[2] -= 0.1;
-
         // _config.eef("root_link")->desired.pose.tail(3)[2] -= 0.15;
         // _config.eef("root_link")->desired.pose.tail(3)[2] -= 0.25;
         // _config.eef("root_link")->desired.pose.tail(3)[0] += 0.12;
+
+        _init_com[0] += 0.04;
+        _init_com[2] -= 0.1;
 
         _config.eef("r_hand")->desired.pose.tail(3)[2] -= 0.1;
         _config.eef("r_hand")->desired.pose.tail(3)[0] += 0.02;
@@ -145,6 +145,12 @@ public:
 
         // return 100. * (commands - _config.skeleton()->getVelocities().tail(_control_dof));
         return commands;
+        // Eigen::VectorXd next_pos = _config.skeleton()->getPositions().tail(_control_dof) + commands * _config.skeleton()->getTimeStep();
+        // Eigen::VectorXd curr_pos = _config.skeleton()->getPositions().tail(_control_dof); //+ _config.skeleton()->getVelocities().tail(_control_dof) * _config.skeleton()->getTimeStep();
+        // // std::cout << (next_pos - curr_pos).norm() << std::endl;
+        // Eigen::VectorXd c = 100000. * (next_pos - curr_pos) - 10. * _config.skeleton()->getVelocities().tail(_control_dof);
+
+        // return c;
     }
 
     std::shared_ptr<robot_dart::control::RobotControl> clone() const
@@ -160,8 +166,55 @@ protected:
 
 void stabilize_robot(const std::shared_ptr<robot_dart::Robot>& robot, robot_dart::RobotDARTSimu& simu)
 {
+    // std::vector<double> target(robot->skeleton()->getNumDofs() - 6);
+
+    // Eigen::VectorXd::Map(target.data(), target.size()) = robot->skeleton()->getPositions().tail(robot->skeleton()->getNumDofs() - 6);
+
+    // robot->add_controller(std::make_shared<robot_dart::control::PDControl>(target));
+    // std::static_pointer_cast<robot_dart::control::PDControl>(robot->controller(0))->set_pd(1000., 10.);
+
     simu.run(3.);
+
+    robot->clear_controllers();
 }
+
+struct RecordDesc : public robot_dart::descriptor::BaseDescriptor {
+public:
+    RecordDesc(robot_dart::RobotDARTSimu& simu, size_t desc_dump = 1) : robot_dart::descriptor::BaseDescriptor(simu, desc_dump), _index(0) {}
+
+    void operator()()
+    {
+        // if (_simu.robots().size() > 0) {
+        //     auto robot = _simu.robots()[0];
+
+        //     robot->skeleton()->clearExternalForces();
+        //     if (_index % 400 == 0) { // every 2 seconds
+        //         _count = 0;
+        //         _f = Eigen::Vector3d::Random(); //.array() * 50.;
+        //         // _f[2] = 0.;
+        //         // _f[0] = 0.;
+        //         // _f[1] = 0.;
+        //         _f = _f.normalized().array() * 50.;
+        //         // _f << 0., 1., 0.;
+        //         // if (_index > 0) {
+        //         //     _f << 0., -1., 0.;
+        //         // }
+        //         // robot->skeleton()->getBodyNode("chest")->setExtForce(_f);
+        //     }
+        //     if (_count < 50) {
+        //         robot->skeleton()->getBodyNode("chest")->setExtForce(_f);
+        //         std::cout << _simu.world()->getTime() << ": " << _f.transpose() << std::endl;
+        //     }
+        //     _count++;
+        //     _index++;
+        // }
+    }
+
+protected:
+    int _index;
+    int _count;
+    Eigen::VectorXd _f;
+};
 
 int main()
 {
@@ -221,6 +274,7 @@ int main()
     simu.world()->getConstraintSolver()->setCollisionDetector(dart::collision::FCLCollisionDetector::create());
 #ifdef GRAPHIC
     simu.set_graphics(std::make_shared<robot_dart::graphics::Graphics>(simu.world()));
+    std::static_pointer_cast<robot_dart::graphics::Graphics>(simu.graphics())->look_at({-2.75, 0., 1.5}, {0., 0., 0.5});
 #endif
     simu.add_robot(icub_robot);
     simu.add_floor();
@@ -231,6 +285,8 @@ int main()
     std::cout << "Stabilized robot!" << std::endl;
 
     icub_robot->add_controller(std::make_shared<QPControl>());
+
+    simu.add_descriptor(std::make_shared<RecordDesc>(simu));
 
     // simu.run(5.);
     // std::cout << "Applying force!" << std::endl;
