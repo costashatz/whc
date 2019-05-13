@@ -98,11 +98,9 @@ namespace whc {
                 // Does not return anything for the contacts
                 // the QPSolver should fix/resize the matrices
                 Eigen::MatrixXd A = Eigen::MatrixXd::Zero(2 * dofs, 2 * dofs);
-                A.diagonal().tail(dofs) = Eigen::VectorXd::Ones(dofs);
-                A.diagonal().array() *= _weights.array();
+                A.diagonal().tail(dofs) = _weights;
                 Eigen::VectorXd b = Eigen::VectorXd::Zero(2 * dofs);
-                b.tail(dofs) = _desired;
-                b.array() *= _weights.array();
+                b.tail(dofs) = _desired.array() * _weights.array();
 
                 return std::make_pair(A, b);
             }
