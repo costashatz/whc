@@ -9,7 +9,7 @@
 - Generic tasks
 - Generic constraints
 - Generic QP solvers
-    - qpOASES and EigenQLD supported
+    - qpOASES
     - easy to add new
 - Inverse Dynamics QP Solver
     - Support for floating base
@@ -20,6 +20,5 @@
 
 ### Missing Features
 
-- Automatic sparsification of problems for faster QP solving
 - Benchmarking of QP solvers
 - Unit tests
