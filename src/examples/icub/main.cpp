@@ -67,19 +67,15 @@ public:
 
         // Contact information for feet eefs
         whc::utils::Contact contact_right;
-        contact_right.mu = 1.;
-        contact_right.muR = 1.;
-        // contact_right.nz = cfg._r_nz;
-        // contact_right.nx = cfg._r_nx;
-        // contact_right.ny = cfg._r_ny;
-        contact_right.min_force = 0.;
-        contact_right.max_force = 500.;
+        contact_right.mu_s = 1.;
+        contact_right.mu_k = 1.;
+        double max_force = 500.;
         contact_right.min = Eigen::VectorXd::Zero(6);
         contact_right.max = Eigen::VectorXd::Zero(6);
-        contact_right.max.tail(3) << contact_right.max_force, contact_right.max_force, contact_right.max_force;
+        contact_right.max.tail(3) << max_force, max_force, max_force;
         double max_torque = 100.;
-        contact_right.calculate_torque = true;
-        // if (contact_right.calculate_torque) {
+        contact_right.cop_constraint = true;
+        // if (contact_right.cop_constraint) {
         contact_right.min.head(3) << -max_torque, -max_torque, -max_torque;
         contact_right.max.head(3) << max_torque, max_torque, max_torque;
         // }
@@ -102,9 +98,6 @@ public:
         contact_right.d_x_max = foot_size_x - sole_x;
 
         whc::utils::Contact contact_left = contact_right;
-        // contact_left.nz = cfg._l_nz;
-        // contact_left.nx = cfg._l_nx;
-        // contact_left.ny = cfg._l_ny;
 
         contact_left.d_y_max = contact_right.d_y_max + sole_y;
         contact_left.d_y_min = contact_right.d_y_min + sole_y;

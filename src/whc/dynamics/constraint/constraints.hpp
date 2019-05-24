@@ -33,6 +33,8 @@ namespace whc {
                 size_t N() const override;
                 std::string get_type() const override;
 
+                void set_contact(const utils::Contact& contact);
+
             protected:
                 utils::Contact _contact;
             };

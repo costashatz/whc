@@ -62,22 +62,22 @@ namespace whc {
             std::pair<Eigen::MatrixXd, Eigen::MatrixXd> ContactConstraint::data(AbstractWhcSolver* solver)
             {
                 double max = std::numeric_limits<double>::max();
-                double min_f = _contact.min_force;
-                double max_f = _contact.max_force;
+                double min_f = _contact.nz.dot(_contact.min.tail(3));
+                double max_f = _contact.nz.dot(_contact.max.tail(3));
                 size_t num_constraints = 5;
-                if (_contact.calculate_torque)
+                if (_contact.cop_constraint)
                     num_constraints += 6;
 
                 Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_constraints, 6);
                 // Force
-                A.block(0, 3, 1, 3) = -(_contact.mu * _contact.nz + _contact.nx).transpose();
-                A.block(1, 3, 1, 3) = -(_contact.mu * _contact.nz + _contact.ny).transpose();
-                A.block(2, 3, 1, 3) = (_contact.mu * _contact.nz + _contact.nx).transpose();
-                A.block(3, 3, 1, 3) = (_contact.mu * _contact.nz + _contact.ny).transpose();
+                A.block(0, 3, 1, 3) = -(_contact.mu_s * _contact.nz + _contact.nx).transpose();
+                A.block(1, 3, 1, 3) = -(_contact.mu_s * _contact.nz + _contact.ny).transpose();
+                A.block(2, 3, 1, 3) = (_contact.mu_s * _contact.nz + _contact.nx).transpose();
+                A.block(3, 3, 1, 3) = (_contact.mu_s * _contact.nz + _contact.ny).transpose();
                 A.block(4, 3, 1, 3) = _contact.nz.transpose();
-                // Torque
+                // CoP constraint
                 // TO-DO: CHECK IF THIS IS CORRECT
-                if (_contact.calculate_torque) {
+                if (_contact.cop_constraint) {
                     double d_y_min = _contact.d_y_min;
                     double d_y_max = _contact.d_y_max;
                     double d_x_min = _contact.d_x_min;
@@ -107,12 +107,12 @@ namespace whc {
                     A.block(8, 0, 1, 3).array() *= local_nx.transpose().array();
                     A.block(8, 3, 1, 3) << R(2, 0), R(2, 1), R(2, 2);
                     A.block(8, 3, 1, 3).array() *= -d_y_max * local_nz.transpose().array();
-                    // fifth constraint: 0 <= T*n - muR*F*n <= max
+                    // fifth constraint: 0 <= T*n - mu_k*F*n <= max
                     A.block(9, 0, 1, 3) = _contact.nz.transpose();
-                    A.block(9, 3, 1, 3) = _contact.muR * _contact.nz.transpose();
-                    // sixth constraint: -max <= T*n-muR*F*n <= 0
+                    A.block(9, 3, 1, 3) = _contact.mu_k * _contact.nz.transpose();
+                    // sixth constraint: -max <= T*n-mu_k*F*n <= 0
                     A.block(10, 0, 1, 3) = _contact.nz.transpose();
-                    A.block(10, 3, 1, 3) = -_contact.muR * _contact.nz.transpose();
+                    A.block(10, 3, 1, 3) = -_contact.mu_k * _contact.nz.transpose();
 
                     // // 1a
                     // // 0 <= T*t1-d_y_min*F*n <= max
@@ -135,21 +135,21 @@ namespace whc {
                     // A.block(8, 3, 1, 3) = -d_x_max * _contact.nz.transpose();
 
                     // // 3a
-                    // // 0 <= T*n+muR*F*n <= max
+                    // // 0 <= T*n+mu_k*F*n <= max
                     // A.block(9, 0, 1, 3) = _contact.nz.transpose();
-                    // A.block(9, 3, 1, 3) = _contact.muR * _contact.nz.transpose();
+                    // A.block(9, 3, 1, 3) = _contact.mu_k * _contact.nz.transpose();
 
                     // // 3b
-                    // // -max <= T*n-muR*F*n <= 0
+                    // // -max <= T*n-mu_k*F*n <= 0
                     // A.block(10, 0, 1, 3) = _contact.nz.transpose();
-                    // A.block(10, 3, 1, 3) = -_contact.muR * _contact.nz.transpose();
+                    // A.block(10, 3, 1, 3) = -_contact.mu_k * _contact.nz.transpose();
                 }
                 // std::cout << A.block(0, 0, num_constraints, 6) << std::endl
                 //           << std::endl;
                 Eigen::MatrixXd bounds = Eigen::MatrixXd::Zero(2, num_constraints);
                 bounds.row(0).head(5) << -max, -max, 0., 0., min_f;
                 bounds.row(1).head(5) << 0., 0., max, max, max_f;
-                if (_contact.calculate_torque) {
+                if (_contact.cop_constraint) {
                     bounds.row(0).tail(6) << 0, -max, 0, -max, 0, -max;
                     bounds.row(1).tail(6) << max, 0, max, 0, max, 0;
                     // bounds.row(0).tail(6) << 0, -max, 0, -max, 0, -max;
@@ -179,13 +179,15 @@ namespace whc {
 
             size_t ContactConstraint::N() const
             {
-                return 5 + ((_contact.calculate_torque) ? 6 : 0);
+                return 5 + ((_contact.cop_constraint) ? 6 : 0);
             }
 
             std::string ContactConstraint::get_type() const
             {
                 return "contact";
             }
+
+            void ContactConstraint::set_contact(const utils::Contact& contact) { _contact = contact; }
 
             JointLimitsConstraint::JointLimitsConstraint(const dart::dynamics::SkeletonPtr& skeleton) : AbstractConstraint(skeleton) {}
 
