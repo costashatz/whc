@@ -19,6 +19,10 @@ def check_robot_dart(conf, *k, **kw):
 
     required = kw.get('required', False)
 
+    msg = ''
+    if not required:
+        msg = ' [optional]'
+
     includes_check = ['/usr/local/include', '/usr/include']
     libs_check = ['/usr/local/lib', '/usr/lib']
 
@@ -36,7 +40,7 @@ def check_robot_dart(conf, *k, **kw):
         libs_check = [conf.options.robot_dart + '/lib']
 
     try:
-        conf.start_msg('Checking for robot_dart includes')
+        conf.start_msg('Checking for robot_dart includes' + msg)
         dirs = []
         dirs.append(get_directory('robot_dart/robot.hpp', includes_check))
         dirs.append(get_directory('robot_dart/control/robot_control.hpp', includes_check))
@@ -49,7 +53,7 @@ def check_robot_dart(conf, *k, **kw):
         conf.end_msg(dirs)
         conf.env.INCLUDES_ROBOT_DART = dirs
 
-        conf.start_msg('Checking for robot_dart library')
+        conf.start_msg('Checking for robot_dart library' + msg)
         libs_ext = ['.a', lib_suffix]
         lib_found = False
         type_lib = '.a'

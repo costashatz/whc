@@ -48,7 +48,7 @@ def configure(conf):
     conf.check_boost(lib='regex system filesystem unit_test_framework', min_version='1.46')
     conf.check_eigen(required=True)
     conf.check_dart(required=True)
-    conf.check_robot_dart(required=True)
+    conf.check_robot_dart(required=False)
 
     avx_dart = conf.check_avx(lib='dart', required=['dart', 'dart-utils', 'dart-utils-urdf'])
     avx_robot_dart = conf.check_avx(lib='robot_dart', required=['RobotDARTSimu'], lib_type='static')
@@ -101,7 +101,7 @@ def summary(bld):
         bld.fatal("Build failed, because some tests failed!")
 
 def build(bld):
-    libs = 'BOOST EIGEN DART ROBOT_DART '
+    libs = 'BOOST EIGEN DART '
     libs_graphics = libs + ' DART_GRAPHIC'
 
     bld.env['whc_libs'] = libs

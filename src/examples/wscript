@@ -1,17 +1,25 @@
 import os
 import fnmatch
+from waflib import Logs
 
 def build(bld):
+    if len(bld.env.INCLUDES_ROBOT_DART) == 0 or (len(bld.env.LIB_ROBOT_DART) == 0 and len(bld.env.STLIB_ROBOT_DART) == 0):
+        Logs.pprint('YELLOW', 'robot_dart not found in your system. Will not build the examples!')
+        return
+
     icub_path = bld.path.abspath() + '/icub/models'
     iiwa_path = bld.path.abspath() + '/iiwa/models'
 
     cxxflags = bld.get_env()['CXXFLAGS']
 
+    libs = bld.env['whc_libs'] + ' ROBOT_DART'
+    graphic_libs = bld.env['whc_graphic_libs'] + ' ROBOT_DART'
+
     bld.program(features = 'cxx',
                 install_path = None,
                 source = 'icub/main.cpp',
                 includes = '..',
-                uselib = bld.env['whc_libs'],
+                uselib = libs,
                 use = 'whc',
                 cxxflags = cxxflags + ['-DRESPATH="' + icub_path + '"'],
                 target = 'icub_example')
@@ -19,7 +27,7 @@ def build(bld):
                 install_path = None,
                 source = 'icub/ik.cpp',
                 includes = '..',
-                uselib = bld.env['whc_libs'],
+                uselib = libs,
                 use = 'whc',
                 cxxflags = cxxflags + ['-DRESPATH="' + icub_path + '"'],
                 target = 'icub_ik_example')
@@ -27,7 +35,7 @@ def build(bld):
                 install_path = None,
                 source = 'iiwa/main.cpp',
                 includes = '..',
-                uselib = bld.env['whc_libs'],
+                uselib = libs,
                 use = 'whc',
                 cxxflags = cxxflags + ['-DRESPATH="' + iiwa_path + '"'],
                 target = 'iiwa_example')
@@ -36,7 +44,7 @@ def build(bld):
                     install_path = None,
                     source = 'icub/main.cpp',
                     includes = '..',
-                    uselib = bld.env['whc_graphic_libs'],
+                    uselib = graphic_libs,
                     use = 'whc',
                     cxxflags = cxxflags + ['-DRESPATH="' + icub_path + '"'],
                     defines = ['GRAPHIC'],
@@ -45,7 +53,7 @@ def build(bld):
                     install_path = None,
                     source = 'icub/ik.cpp',
                     includes = '..',
-                    uselib = bld.env['whc_graphic_libs'],
+                    uselib = graphic_libs,
                     use = 'whc',
                     cxxflags = cxxflags + ['-DRESPATH="' + icub_path + '"'],
                     defines = ['GRAPHIC'],
@@ -54,7 +62,7 @@ def build(bld):
                     install_path = None,
                     source = 'iiwa/main.cpp',
                     includes = '..',
-                    uselib = bld.env['whc_graphic_libs'],
+                    uselib = graphic_libs,
                     use = 'whc',
                     cxxflags = cxxflags + ['-DRESPATH="' + iiwa_path + '"'],
                     defines = ['GRAPHIC'],
