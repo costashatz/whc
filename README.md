@@ -2,7 +2,7 @@
 
 ### Authors
 
-- Author/Maintainer: Konstantinos Chatzilygeroudis
+- Author/Maintainer: Konstantinos Chatzilygeroudis (konstantinos.chatzilygeroudis@epfl.ch)
 
 ### Features
 
