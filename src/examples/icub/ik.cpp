@@ -224,6 +224,8 @@ int main()
     auto icub_robot = icub.robot();
     icub_robot->set_actuator_types(dart::dynamics::Joint::SERVO);
     icub_robot->set_position_enforced(true);
+    icub_robot->skeleton()->getRootJoint()->setActuatorType(dart::dynamics::Joint::FORCE);
+    icub_robot->skeleton()->getRootJoint()->setPositionLimitEnforced(false);
     icub_robot->skeleton()->disableSelfCollisionCheck();
     icub_robot->skeleton()->setPosition(5, 0.625);
     if (model == "iCubNancy01")
