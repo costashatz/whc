@@ -1,4 +1,4 @@
-# C++ Code for Whole-Body Control with QP
+# Whole-Body Control with QP (C++11)
 
 ### Authors
 
