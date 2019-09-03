@@ -106,5 +106,6 @@ def insert(directory):
         insert_header(i, '<!--|', '|-->', license, header)
 
 if __name__ == '__main__':
-    insert('./src')
+    insert('./src/examples')
+    insert('./src/whc')
     insert('./waf_tools')
