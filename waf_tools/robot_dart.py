@@ -89,9 +89,40 @@ def check_robot_dart(conf, *k, **kw):
 
         conf.env.LIBPATH_ROBOT_DART = lib_dir
         if type_lib == '.a':
-            conf.env.STLIB_ROBOT_DART = 'RobotDARTSimu'
+            conf.env.STLIB_ROBOT_DART = ['RobotDARTSimu']
         else:
-            conf.env.LIB_ROBOT_DART = 'RobotDARTSimu'
+            conf.env.LIB_ROBOT_DART = ['RobotDARTSimu']
+
+        # Check for GUI library
+        conf.start_msg('Checking for robot_dart GUI includes' + msg)
+        dirs = []
+        dirs.append(get_directory('robot_dart/gui/magnum/base_application.hpp', includes_check))
+
+        # remove duplicates
+        dirs = list(set(dirs))
+
+        conf.end_msg(dirs)
+        conf.env.INCLUDES_ROBOT_DART_GRAPHIC = dirs
+
+        conf.start_msg('Checking for robot_dart GUI library' + msg)
+        libs_ext = ['.a', lib_suffix]
+        lib_found = False
+        type_lib = '.a'
+        for lib in libs_ext:
+            try:
+                lib_dir = get_directory('libRobotDARTMagnum' + lib, libs_check)
+                lib_found = True
+                type_lib = lib
+                break
+            except:
+                lib_found = False
+        conf.end_msg('libRobotDARTMagnum' + type_lib)
+
+        conf.env.LIBPATH_ROBOT_DART_GRAPHIC = lib_dir
+        if type_lib == '.a':
+            conf.env.STLIB_ROBOT_DART_GRAPHIC = 'RobotDARTMagnum'
+        else:
+            conf.env.LIB_ROBOT_DART_GRAPHIC = 'RobotDARTMagnum'
     except:
         if required:
             conf.fatal('Not found')

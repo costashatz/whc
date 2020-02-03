@@ -20,6 +20,10 @@ import boost
 import eigen
 import robot_dart
 import avx
+import corrade
+import magnum
+import magnum_integration
+import magnum_plugins
 
 def options(opt):
     opt.load('compiler_cxx')
@@ -28,6 +32,10 @@ def options(opt):
     opt.load('eigen')
     opt.load('dart')
     opt.load('robot_dart')
+    opt.load('corrade')
+    opt.load('magnum')
+    opt.load('magnum_integration')
+    opt.load('magnum_plugins')
 
     opt.add_option('--shared', action='store_true', help='build shared library', dest='build_shared')
     # opt.add_option('--tests', action='store_true', help='compile tests or not', dest='tests')
@@ -44,14 +52,34 @@ def configure(conf):
     conf.load('dart')
     conf.load('robot_dart')
     conf.load('avx')
+    conf.load('corrade')
+    conf.load('magnum')
+    conf.load('magnum_integration')
+    conf.load('magnum_plugins')
 
     conf.check_boost(lib='regex system filesystem unit_test_framework', min_version='1.46')
     conf.check_eigen(required=True)
     conf.check_dart(required=True)
     conf.check_robot_dart(required=False)
+    conf.check_corrade(components='Utility PluginManager', required=False)
+    conf.env['magnum_dep_libs'] = 'MeshTools Primitives Shaders SceneGraph GlfwApplication'
+    if conf.env['DEST_OS'] == 'darwin':
+        conf.env['magnum_dep_libs'] += ' WindowlessCglApplication'
+    else:
+        conf.env['magnum_dep_libs'] += ' WindowlessGlxApplication'
+    conf.check_magnum(components=conf.env['magnum_dep_libs'], required=False)
+    conf.check_magnum_plugins(components='AssimpImporter', required=False)
+    conf.check_magnum_integration(components='Dart', required=False)
+
+    if len(conf.env.INCLUDES_MagnumIntegration) > 0:
+        conf.get_env()['BUILD_MAGNUM'] = True
+        conf.env['magnum_libs'] = magnum.get_magnum_dependency_libs(conf, conf.env['magnum_dep_libs']) + magnum_integration.get_magnum_integration_dependency_libs(conf, 'Dart')
 
     avx_dart = conf.check_avx(lib='dart', required=['dart', 'dart-utils', 'dart-utils-urdf'])
-    avx_robot_dart = conf.check_avx(lib='robot_dart', required=['RobotDARTSimu'], lib_type='static')
+    robot_dart_libs = ['RobotDARTSimu']
+    if len(conf.env.INCLUDES_MagnumIntegration) > 0:
+        robot_dart_libs.append('RobotDARTMagnum')
+    avx_robot_dart = conf.check_avx(lib='robot_dart', required=robot_dart_libs, lib_type='static')
     native = ''
     native_icc = ''
     if avx_dart and avx_robot_dart:
@@ -102,10 +130,9 @@ def summary(bld):
 
 def build(bld):
     libs = 'BOOST EIGEN DART '
-    libs_graphics = libs + ' DART_GRAPHIC'
 
     bld.env['whc_libs'] = libs
-    bld.env['whc_graphic_libs'] = libs_graphics
+    bld.env['whc_graphic_libs'] = bld.env['magnum_libs'] + ' ROBOT_DART_GRAPHIC'
 
     cxxflags = bld.get_env()['CXXFLAGS']
 

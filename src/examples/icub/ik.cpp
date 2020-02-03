@@ -22,7 +22,7 @@
 #include <robot_dart/robot_dart_simu.hpp>
 
 #ifdef GRAPHIC
-#include <robot_dart/graphics/graphics.hpp>
+#include <robot_dart/gui/magnum/graphics.hpp>
 #endif
 
 #include <dart/collision/CollisionObject.hpp>
@@ -241,9 +241,9 @@ int main()
 
     auto icub_robot = icub.robot();
     icub_robot->set_actuator_types(dart::dynamics::Joint::SERVO);
-    icub_robot->set_position_enforced(true);
+    icub_robot->set_position_enforced(false);
     icub_robot->skeleton()->getRootJoint()->setActuatorType(dart::dynamics::Joint::FORCE);
-    icub_robot->skeleton()->getRootJoint()->setPositionLimitEnforced(false);
+    // icub_robot->skeleton()->getRootJoint()->setPositionLimitEnforced(false);
     icub_robot->skeleton()->disableSelfCollisionCheck();
     icub_robot->skeleton()->setPosition(5, 0.625);
     if (model == "iCubNancy01")
@@ -293,8 +293,8 @@ int main()
     robot_dart::RobotDARTSimu simu(0.005);
     simu.world()->getConstraintSolver()->setCollisionDetector(dart::collision::FCLCollisionDetector::create());
 #ifdef GRAPHIC
-    simu.set_graphics(std::make_shared<robot_dart::graphics::Graphics>(simu.world()));
-    std::static_pointer_cast<robot_dart::graphics::Graphics>(simu.graphics())->look_at({-2.75, 0., 1.5}, {0., 0., 0.5});
+    simu.set_graphics(std::make_shared<robot_dart::gui::magnum::Graphics<>>(simu.world()));
+    std::static_pointer_cast<robot_dart::gui::magnum::Graphics<>>(simu.graphics())->look_at({0., 2., 1.5}, {0., 0., 0.5});
 #endif
     simu.add_robot(icub_robot);
     simu.add_floor();
