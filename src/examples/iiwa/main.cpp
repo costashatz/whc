@@ -21,7 +21,7 @@
 #include <robot_dart/robot_dart_simu.hpp>
 
 #ifdef GRAPHIC
-#include <robot_dart/graphics/graphics.hpp>
+#include <robot_dart/gui/magnum/graphics.hpp>
 #endif
 
 #include <dart/collision/CollisionObject.hpp>
@@ -147,7 +147,8 @@ int main()
     robot_dart::RobotDARTSimu simu(0.005);
     simu.world()->getConstraintSolver()->setCollisionDetector(dart::collision::FCLCollisionDetector::create());
 #ifdef GRAPHIC
-    simu.set_graphics(std::make_shared<robot_dart::graphics::Graphics>(simu.world()));
+    simu.set_graphics(std::make_shared<robot_dart::gui::magnum::Graphics<>>(simu.world()));
+    std::static_pointer_cast<robot_dart::gui::magnum::Graphics<>>(simu.graphics())->look_at({0., 2., 1.5}, {0., 0., 0.5});
 #endif
     simu.add_robot(arm);
     simu.add_floor();

@@ -237,8 +237,7 @@ def check_dart(conf, *k, **kw):
                 conf.env.LIB_DART_GRAPHIC += osg_comp
                 conf.end_msg(osg_comp)
             else:
-                conf.end_msg('Not found - Your graphical programs may not compile/link', 'RED')
-            conf.get_env()['BUILD_GRAPHIC'] = True
+                conf.end_msg('Not found', 'RED')
 
             # remove duplicates
             conf.env.INCLUDES_DART_GRAPHIC = list(set(conf.env.INCLUDES_DART_GRAPHIC))
