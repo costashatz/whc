@@ -145,9 +145,9 @@ int main()
     arm->add_controller(std::make_shared<QPControl>());
 
     robot_dart::RobotDARTSimu simu(0.005);
-    simu.world()->getConstraintSolver()->setCollisionDetector(dart::collision::FCLCollisionDetector::create());
+    simu.set_collision_detector("fcl");
 #ifdef GRAPHIC
-    simu.set_graphics(std::make_shared<robot_dart::gui::magnum::Graphics<>>(simu.world()));
+    simu.set_graphics(std::make_shared<robot_dart::gui::magnum::Graphics<>>(&simu));
     std::static_pointer_cast<robot_dart::gui::magnum::Graphics<>>(simu.graphics())->look_at({0., 2., 1.5}, {0., 0., 0.5});
 #endif
     simu.add_robot(arm);

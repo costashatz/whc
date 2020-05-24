@@ -57,7 +57,8 @@ def configure(conf):
     conf.load('magnum_integration')
     conf.load('magnum_plugins')
 
-    conf.check_boost(lib='regex system filesystem unit_test_framework', min_version='1.46')
+    conf.check_boost(lib='regex system filesystem unit_test_framework', min_version='1.58')
+    conf.check(features='cxx cxxprogram', lib=['pthread'], uselib_store='PTHREAD')
     conf.check_eigen(required=True)
     conf.check_dart(required=True)
     conf.check_robot_dart(required=False)
@@ -129,7 +130,7 @@ def summary(bld):
         bld.fatal("Build failed, because some tests failed!")
 
 def build(bld):
-    libs = 'BOOST EIGEN DART '
+    libs = 'PTHREAD BOOST EIGEN DART '
 
     bld.env['whc_libs'] = libs
     bld.env['whc_graphic_libs'] = bld.env['magnum_libs'] + ' ROBOT_DART_GRAPHIC'
