@@ -90,8 +90,8 @@ namespace whc {
                 // Force
                 A.block(0, 3, 1, 3) = -(_contact.mu_s * _contact.nz + _contact.nx).transpose();
                 A.block(1, 3, 1, 3) = -(_contact.mu_s * _contact.nz + _contact.ny).transpose();
-                A.block(2, 3, 1, 3) = (_contact.mu_s * _contact.nz + _contact.nx).transpose();
-                A.block(3, 3, 1, 3) = (_contact.mu_s * _contact.nz + _contact.ny).transpose();
+                A.block(2, 3, 1, 3) = (_contact.mu_s * _contact.nz - _contact.nx).transpose();
+                A.block(3, 3, 1, 3) = (_contact.mu_s * _contact.nz - _contact.ny).transpose();
                 A.block(4, 3, 1, 3) = _contact.nz.transpose();
                 // CoP constraint
                 // TO-DO: CHECK IF THIS IS CORRECT
