@@ -320,11 +320,7 @@ protected:
 
 void stabilize_robot(const std::shared_ptr<robot_dart::Robot>& robot, robot_dart::RobotDARTSimu& simu)
 {
-    std::vector<double> target(robot->skeleton()->getNumDofs() - 6);
-
-    Eigen::VectorXd::Map(target.data(), target.size()) = robot->skeleton()->getPositions().tail(robot->skeleton()->getNumDofs() - 6);
-
-    robot->add_controller(std::make_shared<robot_dart::control::PDControl>(target));
+    robot->add_controller(std::make_shared<robot_dart::control::PDControl>(robot->skeleton()->getPositions().tail(robot->skeleton()->getNumDofs() - 6)));
     // std::static_pointer_cast<robot_dart::control::PDControl>(robot->controller(0))->set_pd(200., 10.);
     std::static_pointer_cast<robot_dart::control::PDControl>(robot->controller(0))->set_pd(1000., 10.);
 
@@ -389,8 +385,8 @@ int main()
     robot_dart::RobotDARTSimu simu(0.005);
     simu.set_collision_detector("fcl");
 #ifdef GRAPHIC
-    simu.set_graphics(std::make_shared<robot_dart::gui::magnum::Graphics<>>(&simu));
-    std::static_pointer_cast<robot_dart::gui::magnum::Graphics<>>(simu.graphics())->look_at({0., 2., 1.5}, {0., 0., 0.5});
+    simu.set_graphics(std::make_shared<robot_dart::gui::magnum::Graphics>(&simu));
+    std::static_pointer_cast<robot_dart::gui::magnum::Graphics>(simu.graphics())->look_at({0., 2., 1.5}, {0., 0., 0.5});
 #endif
     simu.add_robot(icub_robot);
     simu.add_floor();
