@@ -24,6 +24,7 @@ import corrade
 import magnum
 import magnum_integration
 import magnum_plugins
+import osqp
 
 def options(opt):
     opt.load('compiler_cxx')
@@ -36,6 +37,7 @@ def options(opt):
     opt.load('magnum')
     opt.load('magnum_integration')
     opt.load('magnum_plugins')
+    opt.load('osqp')
 
     opt.add_option('--shared', action='store_true', help='build shared library', dest='build_shared')
     # opt.add_option('--tests', action='store_true', help='compile tests or not', dest='tests')
@@ -56,6 +58,7 @@ def configure(conf):
     conf.load('magnum')
     conf.load('magnum_integration')
     conf.load('magnum_plugins')
+    conf.load('osqp')
 
     conf.check_boost(lib='regex system filesystem unit_test_framework', min_version='1.58')
     conf.check(features='cxx cxxprogram', lib=['pthread'], uselib_store='PTHREAD')
@@ -71,6 +74,7 @@ def configure(conf):
     conf.check_magnum(components=conf.env['magnum_dep_libs'], required=False)
     conf.check_magnum_plugins(components='AssimpImporter', required=False)
     conf.check_magnum_integration(components='Dart', required=False)
+    conf.check_osqp(required=True)
 
     if len(conf.env.INCLUDES_MagnumIntegration) > 0:
         conf.get_env()['BUILD_MAGNUM'] = True
@@ -130,7 +134,7 @@ def summary(bld):
         bld.fatal("Build failed, because some tests failed!")
 
 def build(bld):
-    libs = 'PTHREAD BOOST EIGEN DART '
+    libs = 'PTHREAD BOOST EIGEN DART OSQP '
 
     bld.env['whc_libs'] = libs
     bld.env['whc_graphic_libs'] = bld.env['magnum_libs'] + ' ROBOT_DART_GRAPHIC'
