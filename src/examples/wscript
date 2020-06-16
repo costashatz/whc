@@ -12,6 +12,10 @@ def build(bld):
 
     cxxflags = bld.get_env()['CXXFLAGS']
 
+    defines = []
+    if len(bld.env.INCLUDES_OSQP) > 0:
+        defines = ['USE_OSQP']
+
     libs = 'ROBOT_DART ' + bld.env['whc_libs']
     graphic_libs = libs + ' ROBOT_DART_GRAPHIC ' + bld.env['magnum_libs']
 
@@ -22,6 +26,7 @@ def build(bld):
                 uselib = libs,
                 use = 'whc',
                 cxxflags = cxxflags + ['-DRESPATH="' + icub_path + '"'],
+                defines = defines,
                 target = 'icub_example')
     bld.program(features = 'cxx',
                 install_path = None,
@@ -30,6 +35,7 @@ def build(bld):
                 uselib = libs,
                 use = 'whc',
                 cxxflags = cxxflags + ['-DRESPATH="' + icub_path + '"'],
+                defines = defines,
                 target = 'icub_ik_example')
     bld.program(features = 'cxx',
                 install_path = None,
@@ -38,6 +44,7 @@ def build(bld):
                 uselib = libs,
                 use = 'whc',
                 cxxflags = cxxflags + ['-DRESPATH="' + iiwa_path + '"'],
+                defines=defines,
                 target = 'iiwa_example')
     if bld.get_env()['BUILD_MAGNUM'] == True:
         bld.program(features = 'cxx',
@@ -47,7 +54,7 @@ def build(bld):
                     uselib = graphic_libs,
                     use = 'whc',
                     cxxflags = cxxflags + ['-DRESPATH="' + icub_path + '"'],
-                    defines = ['GRAPHIC'],
+                    defines = defines + ['GRAPHIC'],
                     target = 'icub_example_graphic')
         bld.program(features = 'cxx',
                     install_path = None,
@@ -56,7 +63,7 @@ def build(bld):
                     uselib = graphic_libs,
                     use = 'whc',
                     cxxflags = cxxflags + ['-DRESPATH="' + icub_path + '"'],
-                    defines = ['GRAPHIC'],
+                    defines = defines + ['GRAPHIC'],
                     target = 'icub_ik_example_graphic')
         bld.program(features = 'cxx',
                     install_path = None,
@@ -65,5 +72,5 @@ def build(bld):
                     uselib = graphic_libs,
                     use = 'whc',
                     cxxflags = cxxflags + ['-DRESPATH="' + iiwa_path + '"'],
-                    defines = ['GRAPHIC'],
+                    defines = defines + ['GRAPHIC'],
                     target = 'iiwa_example_graphic')

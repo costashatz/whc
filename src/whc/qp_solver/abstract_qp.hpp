@@ -27,6 +27,7 @@ namespace whc {
         public:
             virtual bool solve(const Eigen::MatrixXd& H, const Eigen::VectorXd& g, const Eigen::MatrixXd& A, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub, const Eigen::VectorXd& lbA, const Eigen::VectorXd& ubA) = 0;
             virtual Eigen::VectorXd get_solution() const = 0;
+            virtual void reset() {}
             virtual ~AbstractQP() {}
         };
     } // namespace qp_solver

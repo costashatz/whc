@@ -9,7 +9,8 @@
 - Generic tasks
 - Generic constraints
 - Generic QP solvers
-    - [qpOASES](https://projects.coin-or.org/qpOASES)
+    - [qpOASES](https://projects.coin-or.org/qpOASES) --- built along with `whc`
+    - [OSQP](https://osqp.org/) --- optional dependency through [OsqpEigen](https://github.com/robotology/osqp-eigen) (highly recommended)
     - easy to add new
 - Inverse Dynamics QP Solver
     - Support for floating base
