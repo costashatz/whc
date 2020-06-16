@@ -137,7 +137,7 @@ def build(bld):
     libs = 'PTHREAD BOOST EIGEN DART '
 
     defines = []
-    if len(bld.env.INCLUDES_OSQP)>0:
+    if len(bld.env.INCLUDES_OSQP) > 0:
         libs = libs + 'OSQP '
         defines = ['USE_OSQP']
 

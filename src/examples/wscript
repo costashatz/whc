@@ -13,7 +13,7 @@ def build(bld):
     cxxflags = bld.get_env()['CXXFLAGS']
 
     defines = []
-    if len(bld.env.INCLUDES_OSQP)>0:
+    if len(bld.env.INCLUDES_OSQP) > 0:
         defines = ['USE_OSQP']
 
     libs = 'ROBOT_DART ' + bld.env['whc_libs']
