@@ -34,7 +34,9 @@
 #include <whc/dynamics/constraint/constraints.hpp>
 #include <whc/dynamics/solver/id_solver.hpp>
 #include <whc/dynamics/task/tasks.hpp>
+#ifdef USE_OSQP
 #include <whc/qp_solver/osqp.hpp>
+#endif
 #include <whc/qp_solver/qp_oases.hpp>
 #include <whc/utils/math.hpp>
 
@@ -57,7 +59,11 @@ public:
         auto skel = robot->skeleton()->clone();
 #endif
         _solver = std::make_shared<whc::dyn::solver::IDSolver>(skel);
+#ifdef USE_OSQP
         _solver->set_qp_solver<whc::qp_solver::OSQP>(200, false);
+#else
+        _solver->set_qp_solver<whc::qp_solver::QPOases>(0.005, 1000, false);
+#endif
         _prev_tau = Eigen::VectorXd::Zero(robot->skeleton()->getNumDofs());
         _init_pos = robot->skeleton()->getPositions();
 

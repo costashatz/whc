@@ -19,6 +19,7 @@
 #ifndef WHC_QP_SOLVER_OSQP_HPP
 #define WHC_QP_SOLVER_OSQP_HPP
 
+#ifdef USE_OSQP
 #include <whc/qp_solver/abstract_qp.hpp>
 
 #include <Eigen/Sparse>
@@ -56,5 +57,8 @@ namespace whc {
         };
     } // namespace qp_solver
 } // namespace whc
+#else
+#warning OSQP not found! You cannot use this solver!
+#endif
 
 #endif

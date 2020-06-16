@@ -16,6 +16,7 @@
 //|    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //|    GNU General Public License for more details.
 //|
+#ifdef USE_OSQP
 #include <memory>
 
 #include <OsqpEigen/Solver.hpp>
@@ -143,3 +144,4 @@ namespace whc {
         }
     } // namespace qp_solver
 } // namespace whc
+#endif

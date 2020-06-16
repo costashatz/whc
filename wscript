@@ -74,7 +74,7 @@ def configure(conf):
     conf.check_magnum(components=conf.env['magnum_dep_libs'], required=False)
     conf.check_magnum_plugins(components='AssimpImporter', required=False)
     conf.check_magnum_integration(components='Dart', required=False)
-    conf.check_osqp(required=True)
+    conf.check_osqp(required=False)
 
     if len(conf.env.INCLUDES_MagnumIntegration) > 0:
         conf.get_env()['BUILD_MAGNUM'] = True
@@ -134,7 +134,12 @@ def summary(bld):
         bld.fatal("Build failed, because some tests failed!")
 
 def build(bld):
-    libs = 'PTHREAD BOOST EIGEN DART OSQP '
+    libs = 'PTHREAD BOOST EIGEN DART '
+
+    defines = []
+    if len(bld.env.INCLUDES_OSQP)>0:
+        libs = libs + 'OSQP '
+        defines = ['USE_OSQP']
 
     bld.env['whc_libs'] = libs
     bld.env['whc_graphic_libs'] = bld.env['magnum_libs'] + ' ROBOT_DART_GRAPHIC'
@@ -163,6 +168,7 @@ def build(bld):
                 includes = './src ./src/external/qpOASES/include',
                 uselib = libs,
                 cxxflags = cxxflags + ['-DLINUX'],
+                defines = defines,
                 target = 'whc')
 
     bld.recurse('./src/examples')
