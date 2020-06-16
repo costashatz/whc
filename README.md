@@ -43,6 +43,8 @@ make -j4
 sudo make install
 ```
 
+If you want to use the **OSQP** solver, please follow the installation instructions of [OsqpEigen](https://github.com/robotology/osqp-eigen/) and [OSQP](https://osqp.org/).
+
 For building and running the examples, [robot_dart](https://github.com/resibots/robot_dart) is required. Follow the [installation instructions](https://github.com/resibots/robot_dart/blob/master/docs/installation.md) provided by the developers.
 
 #### Compilation
