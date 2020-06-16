@@ -40,8 +40,6 @@
 #include <whc/qp_solver/qp_oases.hpp>
 #include <whc/utils/math.hpp>
 
-#include <chrono>
-
 #include "iCub.hpp"
 
 class QPControl : public robot_dart::control::RobotControl {
@@ -147,7 +145,6 @@ public:
 
     Eigen::VectorXd calculate(double t) override
     {
-        auto start = std::chrono::high_resolution_clock::now();
         static double t0 = t;
         static bool f = true;
         double w = 100.;
@@ -310,15 +307,10 @@ public:
             _prev_tau = _solver->solution().segment(robot->skeleton()->getNumDofs(), robot->skeleton()->getNumDofs());
         }
 
-        auto end = std::chrono::high_resolution_clock::now();
-
         // std::cout << "F: " << _solver->solution().tail(12).transpose() << std::endl;
         // std::cout << "qddot: " << _solver->solution().head(robot->skeleton()->getNumDofs()).transpose() << std::endl;
 
         // std::cin.get();
-
-        std::chrono::duration<double, std::milli> t_sel = (end - start);
-        std::cout << t_sel.count() << std::endl;
 
         return commands;
     }
