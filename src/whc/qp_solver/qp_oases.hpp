@@ -1,7 +1,7 @@
 //|
 //|    Copyright (C) 2019 Learning Algorithms and Systems Laboratory, EPFL, Switzerland
 //|    Author/Maintainer:  Konstantinos Chatzilygeroudis
-//|    email:   konstantinos.chatzilygeroudis@epfl.ch
+//|    email:   costashatz@gmail.com
 //|    website: lasa.epfl.ch
 //|
 //|    This file is part of whc.
