@@ -25,6 +25,7 @@ import magnum
 import magnum_integration
 import magnum_plugins
 import osqp
+import pybind
 
 def options(opt):
     opt.load('compiler_cxx')
@@ -38,9 +39,11 @@ def options(opt):
     opt.load('magnum_integration')
     opt.load('magnum_plugins')
     opt.load('osqp')
+    opt.load('pybind')
 
     opt.add_option('--shared', action='store_true', help='build shared library', dest='build_shared')
     # opt.add_option('--tests', action='store_true', help='compile tests or not', dest='tests')
+    opt.add_option('--python', action='store_true', help='compile python bindings', dest='pybind')
 
 
 def configure(conf):
@@ -59,6 +62,9 @@ def configure(conf):
     conf.load('magnum_integration')
     conf.load('magnum_plugins')
     conf.load('osqp')
+    if conf.options.pybind:
+        conf.load('python')
+        conf.load('pybind')
 
     conf.check_boost(lib='regex system filesystem unit_test_framework', min_version='1.58')
     conf.check(features='cxx cxxprogram', lib=['pthread'], uselib_store='PTHREAD')
@@ -75,6 +81,18 @@ def configure(conf):
     conf.check_magnum_plugins(components='AssimpImporter', required=False)
     conf.check_magnum_integration(components='Dart', required=False)
     conf.check_osqp(required=False)
+
+    conf.env['py_flags'] = ''
+    conf.env['BUILD_PYTHON'] = False
+    if conf.options.pybind:
+        conf.check_python_version((2, 7))
+        conf.check_python_headers(features='pyext')
+        conf.check_python_module('numpy')
+        conf.check_python_module('dartpy')
+        conf.check_pybind11(required=True)
+        conf.env['BUILD_PYTHON'] = True
+        if conf.env.CXX_NAME in ["gcc", "g++"]:
+            conf.env['py_flags'] = ' -fPIC' # we need -fPIC in some Linux/gcc combinations
 
     if len(conf.env.INCLUDES_MagnumIntegration) > 0:
         conf.get_env()['BUILD_MAGNUM'] = True
@@ -118,7 +136,7 @@ def configure(conf):
         if gcc_version >= 71:
             opt_flags = opt_flags + " -faligned-new"
 
-    all_flags = common_flags + opt_flags
+    all_flags = common_flags + conf.env['py_flags'] + opt_flags
     conf.env['CXXFLAGS'] = conf.env['CXXFLAGS'] + all_flags.split(' ')
     print(conf.env['CXXFLAGS'])
 
@@ -172,6 +190,34 @@ def build(bld):
                 target = 'whc')
 
     bld.recurse('./src/examples')
+
+    #### compilation of the Python3 bindings
+    if bld.env['BUILD_PYTHON'] == True:
+        # fix for native flags from pyext
+        native_flags = ['-march=x86-64', '-mtune=generic']
+        for flag in native_flags:
+            if flag in bld.env['CXXFLAGS_PYEXT']:
+                bld.env['CXXFLAGS_PYEXT'].remove(flag)
+        for flag in bld.env['CXXFLAGS']:
+            if flag in bld.env['CXXFLAGS_PYEXT']:
+                bld.env['CXXFLAGS_PYEXT'].remove(flag)
+
+        py_files = []
+        for root, dirnames, filenames in os.walk(bld.path.abspath()+'/src/python/'):
+            for filename in fnmatch.filter(filenames, '*.cpp'):
+                ffile = os.path.join(root, filename)
+                py_files.append(ffile)
+
+        py_files = [f[len(bld.path.abspath())+1:] for f in py_files]
+        py_srcs = " ".join(py_files)
+
+        bld.program(features = 'c cshlib pyext',
+                    source = './src/python/whc.cc ' + py_srcs,
+                    includes = './src',
+                    uselib = 'PYBIND11 ' + libs,
+                    use = 'whc',
+                    defines = defines,
+                    target = 'pywhc')
 
     bld.add_post_fun(summary)
 

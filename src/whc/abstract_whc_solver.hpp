@@ -30,8 +30,8 @@ namespace whc {
     public:
         AbstractWhcSolver();
         AbstractWhcSolver(const dart::dynamics::SkeletonPtr& skeleton);
-        virtual ~AbstractWhcSolver(){}
-        
+        virtual ~AbstractWhcSolver() {}
+
         void set_skeleton(const dart::dynamics::SkeletonPtr& skeleton);
 
         qp_solver::AbstractQP* get_qp_solver() const;
