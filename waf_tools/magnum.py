@@ -75,6 +75,8 @@ def get_magnum_dependency_libs(bld, components, magnum_var = 'Magnum', corrade_v
         requested_components = requested_components + magnum_dependencies[lib]
     # remove duplicates
     requested_components = list(set(requested_components))
+    # remove non-lib components
+    requested_components = [c for c in requested_components if magnum_component_type[c] == 'lib']
 
     # first sanity checks
     # Magnum requires Corrade
@@ -142,6 +144,7 @@ def check_magnum(conf, *k, **kw):
 
     # OSX/Mac uses .dylib and GNU/Linux .so
     suffix = 'dylib' if conf.env['DEST_OS'] == 'darwin' else 'so'
+    modules_suffix = 'so'
 
     # Magnum depends on several libraries and we cannot make the assumption that
     # someone installed all of them in the same directory!
@@ -486,7 +489,7 @@ def check_magnum(conf, *k, **kw):
                 # we need the full lib_dir in order to be able to link to the plugins
                 # or not? because they are loaded dynamically
                 # we need to set the libpath for the static plugins only
-                lib_dir = get_directory('magnum/'+lib_path_suffix+lib+'.'+suffix, libs_check, True)
+                lib_dir = get_directory('magnum/'+lib_path_suffix+lib+'.'+modules_suffix, libs_check, True)
 
                 magnum_component_includes[component] = magnum_component_includes[component] + [include_dir]
                 # magnum_component_libpaths[component] = magnum_component_libpaths[component] + [lib_dir]
@@ -538,8 +541,8 @@ def check_magnum(conf, *k, **kw):
         conf.env['DEFINES_%s' % magnum_var].append('%s_PLUGINS_IMAGECONVERTER_DIR="%s"' % (magnum_var.upper(), magnum_plugins_imageconverter_dir))
         conf.env['DEFINES_%s' % magnum_var].append('%s_PLUGINS_IMPORTER_DIR="%s"' % (magnum_var.upper(), magnum_plugins_importer_dir))
         conf.env['DEFINES_%s' % magnum_var].append('%s_PLUGINS_AUDIOIMPORTER_DIR="%s"' % (magnum_var.upper(), magnum_plugins_audioimporter_dir))
-        for config in magnum_config:
-            conf.env['DEFINES_%s' % magnum_var].append(config)
+        # for config in magnum_config: # No need for these defines
+        #     conf.env['DEFINES_%s' % magnum_var].append(config)
         if conf.env['DEST_OS'] == 'darwin':
             conf.env['DEFINES_%s' % magnum_var].append('%s_MAC_OSX' % magnum_var.upper())
 
