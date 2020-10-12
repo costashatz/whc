@@ -198,7 +198,7 @@ void stabilize_robot(const std::shared_ptr<robot_dart::Robot>& robot, robot_dart
 
 struct RecordDesc : public robot_dart::descriptor::BaseDescriptor {
 public:
-    RecordDesc(robot_dart::RobotDARTSimu* simu, size_t desc_dump = 1) : robot_dart::descriptor::BaseDescriptor(simu, desc_dump), _index(0) {}
+    RecordDesc(size_t desc_dump = 1) : robot_dart::descriptor::BaseDescriptor(desc_dump), _index(0) {}
 
     void operator()()
     {
@@ -292,7 +292,7 @@ int main()
     robot_dart::RobotDARTSimu simu(0.005);
     simu.set_collision_detector("fcl");
 #ifdef GRAPHIC
-    simu.set_graphics(std::make_shared<robot_dart::gui::magnum::Graphics>(&simu));
+    simu.set_graphics(std::make_shared<robot_dart::gui::magnum::Graphics>());
     std::static_pointer_cast<robot_dart::gui::magnum::Graphics>(simu.graphics())->look_at({0., 2., 1.5}, {0., 0., 0.5});
 #endif
     simu.add_robot(icub_robot);
@@ -305,7 +305,7 @@ int main()
 
     icub_robot->add_controller(std::make_shared<QPControl>());
 
-    simu.add_descriptor(std::make_shared<RecordDesc>(&simu));
+    simu.add_descriptor(std::make_shared<RecordDesc>());
 
     // simu.run(5.);
     // std::cout << "Applying force!" << std::endl;
