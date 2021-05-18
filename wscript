@@ -84,14 +84,15 @@ def configure(conf):
     if len(conf.env.INCLUDES_MagnumIntegration) > 0:
         robot_dart_libs.append('RobotDARTMagnum')
     avx_robot_dart = conf.check_avx(lib='robot_dart', required=robot_dart_libs, lib_type='static')
+    avx_osqp = conf.check_avx(lib='osqp', required=['OsqpEigen'])
     native = ''
     native_icc = ''
-    if avx_dart and avx_robot_dart:
+    if avx_dart and avx_robot_dart and avx_osqp:
         conf.msg('-march=native (AVX support)', 'yes', color='GREEN')
         native = '-march=native'
         native_icc = 'mtune=native'
     else:
-        if avx_dart or avx_robot_dart:
+        if avx_dart or avx_robot_dart or avx_osqp:
             conf.msg('-march=native (AVX support)', 'no (optional) --- some libraries are compiled with avx and others not; your programs might not run!', color='RED')
         else:
             conf.msg('-march=native (AVX support)', 'no (optional)', color='YELLOW')

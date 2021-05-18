@@ -35,11 +35,13 @@ namespace whc {
         void OSQP::reset()
         {
             _first = true;
+            if (_qp_solver)
+                _qp_solver->clearSolver();
             _qp_solver.reset(new OsqpEigen::Solver());
 
             _qp_solver->settings()->setVerbosity(_verbose);
             _qp_solver->settings()->setWarmStart(true);
-            _qp_solver->settings()->setMaxIteraction(_max_iters);
+            _qp_solver->settings()->setMaxIteration(_max_iters);
         }
 
         bool OSQP::solve(const Eigen::MatrixXd& H, const Eigen::VectorXd& g, const Eigen::MatrixXd& A, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub, const Eigen::VectorXd& lbA, const Eigen::VectorXd& ubA)
@@ -106,14 +108,10 @@ namespace whc {
                     return false;
             }
 
-            if (!_qp_solver->solve())
+            if (!_qp_solver->solve() || _qp_solver->getSolution().size() != static_cast<int>(dim))
                 return false;
 
-            // if (_qp_solver->getSolution().size() != dim)
-            //     return false;
-
-            // _solution = _qp_solver->getSolution();
-            _qp_solver->getPrimalVariable(_solution);
+            _solution = _qp_solver->getSolution();
 
             return true;
         }

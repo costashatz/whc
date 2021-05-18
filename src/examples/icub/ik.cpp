@@ -35,6 +35,9 @@
 #include <whc/kinematics/solver/ik_solver.hpp>
 #include <whc/kinematics/task/tasks.hpp>
 #include <whc/qp_solver/qp_oases.hpp>
+#ifdef USE_OSQP
+#include <whc/qp_solver/osqp.hpp>
+#endif
 #include <whc/utils/math.hpp>
 
 #include "iCub.hpp"
@@ -54,7 +57,11 @@ public:
         auto skel = robot->skeleton()->clone();
 #endif
         _solver = std::make_shared<whc::kin::solver::IKSolver>(skel);
-        _solver->set_qp_solver<whc::qp_solver::QPOases>();
+#ifdef USE_OSQP
+        _solver->set_qp_solver<whc::qp_solver::OSQP>(200, false);
+#else
+        _solver->set_qp_solver<whc::qp_solver::QPOases>(0.005, 200, false);
+#endif
         _prev_vel = Eigen::VectorXd::Zero(robot->skeleton()->getNumDofs());
         _init_pos = robot->skeleton()->getPositions();
 

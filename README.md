@@ -34,16 +34,16 @@
 cd /path/to/tmp/folder
 git clone git://github.com/dartsim/dart.git
 cd dart
-git checkout release-6.9
+git checkout v6.10.1
 
 mkdir build
 cd build
-cmake -DDART_ENABLE_SIMD=ON ..
+cmake -DDART_ENABLE_SIMD=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr ..
 make -j4
 sudo make install
 ```
 
-If you want to use the **OSQP** solver, please follow the installation instructions of [OsqpEigen](https://github.com/robotology/osqp-eigen/) and [OSQP](https://osqp.org/).
+If you want to use the **OSQP** solver, please follow the installation instructions of [OsqpEigen](https://github.com/robotology/osqp-eigen/) and [OSQP](https://osqp.org/). If you want native flags (i.e., `march=native`) to be enabled (for performance), either do `export CXX_FLAGS="march=native -faligned-new"` before the cmake command for osqp installation or use our fork of [OsqpEigen](https://github.com/costashatz/osqp-eigen/tree/simd) (`simd` branch) and the `-DENABLE_SIMD=ON` cmake option.
 
 For building and running the examples, [robot_dart](https://github.com/resibots/robot_dart) is required. Follow the [installation instructions](https://github.com/resibots/robot_dart/blob/master/docs/installation.md) provided by the developers.
 
