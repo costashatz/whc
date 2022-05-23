@@ -61,10 +61,10 @@ namespace whc {
                     bool dummy_obj = (ixx == 1.) && (iyy == 1.) && (izz == 1.) && (ixy == 0.) && (ixz == 0.) && (iyz == 0.);
 
                     if (bd->getMass() == 1. && dummy_obj) {
-                        bd->setMass(1e-8);
+                        bd->setMass(1e-4);
                     }
                     else if (bd->getMass() == 0.) {
-                        bd->setMass(1e-8);
+                        bd->setMass(1e-4);
                         bd->setMomentOfInertia(1., 1., 1., 0., 0., 0.);
                     }
                 }

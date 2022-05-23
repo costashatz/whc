@@ -103,23 +103,31 @@ def configure(conf):
         conf.env['lib_type'] = 'cxxshlib'
 
     if conf.env.CXX_NAME in ["icc", "icpc"]:
-        common_flags = "-Wall -std=c++14"
+        common_flags = "-Wall -std=c++11"
         opt_flags = " -O3 -xHost -unroll -g " +  native_icc
     elif conf.env.CXX_NAME in ["clang"]:
-        common_flags = "-Wall -std=c++14"
+        common_flags = "-Wall -std=c++11"
         opt_flags = " -O3 -g -faligned-new " + native
     else:
         gcc_version = int(conf.env['CC_VERSION'][0]+conf.env['CC_VERSION'][1])
         if gcc_version < 47:
             conf.fatal('You need gcc version >= 4.7 for this project.')
         else:
-            common_flags = "-Wall -std=c++14"
+            common_flags = "-Wall -std=c++11"
         opt_flags = " -O3 -g " + native
         if gcc_version >= 71:
             opt_flags = opt_flags + " -faligned-new"
 
     all_flags = common_flags + opt_flags
     conf.env['CXXFLAGS'] = conf.env['CXXFLAGS'] + all_flags.split(' ')
+
+    if len(conf.env.CXXFLAGS_DART) > 0:
+        if '-std=c++11' in conf.env['CXXFLAGS']:
+            conf.env['CXXFLAGS'].remove('-std=c++11')
+        if '-std=c++0x' in conf.env['CXXFLAGS']:
+            conf.env['CXXFLAGS'].remove('-std=c++0x')
+        conf.env['CXXFLAGS'] = conf.env['CXXFLAGS'] + conf.env.CXXFLAGS_DART
+    conf.env['CXXFLAGS'] = list(set(conf.env['CXXFLAGS']))
     print(conf.env['CXXFLAGS'])
 
 def summary(bld):

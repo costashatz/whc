@@ -328,13 +328,15 @@ protected:
 
 void stabilize_robot(const std::shared_ptr<robot_dart::Robot>& robot, robot_dart::RobotDARTSimu& simu)
 {
-    robot->add_controller(std::make_shared<robot_dart::control::PDControl>(robot->skeleton()->getPositions().tail(robot->skeleton()->getNumDofs() - 6)));
-    // std::static_pointer_cast<robot_dart::control::PDControl>(robot->controller(0))->set_pd(200., 10.);
-    std::static_pointer_cast<robot_dart::control::PDControl>(robot->controller(0))->set_pd(1000., 10.);
+    robot->set_actuator_types("servo");
+    // robot->add_controller(std::make_shared<robot_dart::control::PDControl>(robot->skeleton()->getPositions().tail(robot->skeleton()->getNumDofs() - 6)));
+    // // std::static_pointer_cast<robot_dart::control::PDControl>(robot->controller(0))->set_pd(200., 10.);
+    // std::static_pointer_cast<robot_dart::control::PDControl>(robot->controller(0))->set_pd(1000., 10.);
 
     simu.run(3.);
 
-    robot->clear_controllers();
+    // robot->clear_controllers();
+    robot->set_actuator_types("torque");
 }
 
 int main()
@@ -346,8 +348,8 @@ int main()
     icub_robot->set_position_enforced(true);
     icub_robot->skeleton()->disableSelfCollisionCheck();
     icub_robot->skeleton()->setPosition(5, 0.625);
-    if (model == "iCubNancy01")
-        icub_robot->skeleton()->setPosition(5, 0.6 + 1e-5);
+    // if (model == "iCubNancy01")
+    //     icub_robot->skeleton()->setPosition(5, 0.6 + 1e-5);
     // for (size_t i = 6; i < icub_robot->skeleton()->getNumDofs(); i++) {
     //     icub_robot->skeleton()->getDof(i)->getJoint()->setDampingCoefficient(0, 0.);
     //     icub_robot->skeleton()->getDof(i)->getJoint()->setCoulombFriction(0, 0.);

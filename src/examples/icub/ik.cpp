@@ -203,43 +203,43 @@ void stabilize_robot(const std::shared_ptr<robot_dart::Robot>& robot, robot_dart
     robot->clear_controllers();
 }
 
-struct RecordDesc : public robot_dart::descriptor::BaseDescriptor {
-public:
-    RecordDesc(size_t desc_dump = 1) : robot_dart::descriptor::BaseDescriptor(desc_dump), _index(0) {}
+// struct RecordDesc : public robot_dart::descriptor::BaseDescriptor {
+// public:
+//     RecordDesc(size_t desc_dump = 1) : robot_dart::descriptor::BaseDescriptor(desc_dump), _index(0) {}
 
-    void operator()()
-    {
-        // if (_simu.robots().size() > 0) {
-        //     auto robot = _simu.robots()[0];
+//     void operator()()
+//     {
+//         // if (_simu.robots().size() > 0) {
+//         //     auto robot = _simu.robots()[0];
 
-        //     robot->skeleton()->clearExternalForces();
-        //     if (_index % 400 == 0) { // every 2 seconds
-        //         _count = 0;
-        //         _f = Eigen::Vector3d::Random(); //.array() * 50.;
-        //         // _f[2] = 0.;
-        //         // _f[0] = 0.;
-        //         // _f[1] = 0.;
-        //         _f = _f.normalized().array() * 50.;
-        //         // _f << 0., 1., 0.;
-        //         // if (_index > 0) {
-        //         //     _f << 0., -1., 0.;
-        //         // }
-        //         // robot->skeleton()->getBodyNode("chest")->setExtForce(_f);
-        //     }
-        //     if (_count < 50) {
-        //         robot->skeleton()->getBodyNode("chest")->setExtForce(_f);
-        //         std::cout << _simu.world()->getTime() << ": " << _f.transpose() << std::endl;
-        //     }
-        //     _count++;
-        //     _index++;
-        // }
-    }
+//         //     robot->skeleton()->clearExternalForces();
+//         //     if (_index % 400 == 0) { // every 2 seconds
+//         //         _count = 0;
+//         //         _f = Eigen::Vector3d::Random(); //.array() * 50.;
+//         //         // _f[2] = 0.;
+//         //         // _f[0] = 0.;
+//         //         // _f[1] = 0.;
+//         //         _f = _f.normalized().array() * 50.;
+//         //         // _f << 0., 1., 0.;
+//         //         // if (_index > 0) {
+//         //         //     _f << 0., -1., 0.;
+//         //         // }
+//         //         // robot->skeleton()->getBodyNode("chest")->setExtForce(_f);
+//         //     }
+//         //     if (_count < 50) {
+//         //         robot->skeleton()->getBodyNode("chest")->setExtForce(_f);
+//         //         std::cout << _simu.world()->getTime() << ": " << _f.transpose() << std::endl;
+//         //     }
+//         //     _count++;
+//         //     _index++;
+//         // }
+//     }
 
-protected:
-    int _index;
-    int _count;
-    Eigen::VectorXd _f;
-};
+// protected:
+//     int _index;
+//     int _count;
+//     Eigen::VectorXd _f;
+// };
 
 int main()
 {
@@ -312,7 +312,7 @@ int main()
 
     icub_robot->add_controller(std::make_shared<QPControl>());
 
-    simu.add_descriptor(std::make_shared<RecordDesc>());
+    // simu.add_descriptor(std::make_shared<RecordDesc>());
 
     // simu.run(5.);
     // std::cout << "Applying force!" << std::endl;
