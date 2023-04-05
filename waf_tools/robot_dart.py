@@ -65,7 +65,6 @@ def check_robot_dart(conf, *k, **kw):
         dirs.append(get_directory('robot_dart/robot.hpp', includes_check))
         dirs.append(get_directory('robot_dart/control/robot_control.hpp', includes_check))
         dirs.append(get_directory('robot_dart/robot_dart_simu.hpp', includes_check))
-        dirs.append(get_directory('robot_dart/descriptor/base_descriptor.hpp', includes_check))
 
         # remove duplicates
         dirs = list(set(dirs))

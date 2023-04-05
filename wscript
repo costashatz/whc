@@ -69,7 +69,7 @@ def configure(conf):
     if conf.env['DEST_OS'] == 'darwin':
         conf.env['magnum_dep_libs'] += ' WindowlessCglApplication'
     else:
-        conf.env['magnum_dep_libs'] += ' WindowlessGlxApplication'
+        conf.env['magnum_dep_libs'] += ' WindowlessEglApplication'
     conf.check_magnum(components=conf.env['magnum_dep_libs'], required=False)
     conf.check_magnum_plugins(components='AssimpImporter', required=False)
     conf.check_magnum_integration(components='Dart', required=False)
