@@ -135,9 +135,9 @@ def check_magnum(conf, *k, **kw):
         fatal(required, 'Magnum cannot be setup with GCC < 4.8!')
         return
 
-    includes_check = ['/usr/local/include', '/usr/include', '/opt/local/include', '/sw/include']
-    libs_check = ['/usr/lib', '/usr/local/lib', '/opt/local/lib', '/sw/lib', '/lib', '/usr/lib/x86_64-linux-gnu/', '/usr/lib64']
-    bins_check = ['/usr/bin', '/usr/local/bin', '/opt/local/bin', '/sw/bin', '/bin']
+    includes_check = ['/usr/local/include', '/usr/include', '/opt/local/include', '/sw/include', '/opt/homebrew/include']
+    libs_check = ['/usr/lib', '/usr/local/lib64', '/usr/local/lib', '/opt/local/lib', '/sw/lib', '/lib', '/usr/lib64', '/usr/lib/x86_64-linux-gnu/', '/usr/local/lib/x86_64-linux-gnu/', '/usr/lib/aarch64-linux-gnu/', '/usr/local/lib/aarch64-linux-gnu/', '/opt/homebrew/lib']
+    bins_check = ['/usr/bin', '/usr/local/bin', '/opt/local/bin', '/sw/bin', '/bin', '/opt/homebrew/bin']
     if conf.env['DEST_OS'] == 'darwin':
         includes_check = includes_check + ['/System/Library/Frameworks/OpenGL.framework/Headers', '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers/']
         libs_check = libs_check + ['/System/Library/Frameworks/OpenGL.framework/Libraries', '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/']
@@ -181,7 +181,7 @@ def check_magnum(conf, *k, **kw):
     magnum_var = kw.get('uselib_store', 'Magnum')
     # to-do: enforce C++11/14
 
-    magnum_possible_configs = ["BUILD_DEPRECATED", "BUILD_STATIC", "BUILD_MULTITHREADED", "TARGET_GL", "TARGET_GLES", "TARGET_GLES2", "TARGET_GLES3", "TARGET_DESKTOP_GLES", "TARGET_WEBGL", "TARGET_HEADLESS"]
+    magnum_possible_configs = ["BUILD_DEPRECATED", "BUILD_STATIC", "BUILD_MULTITHREADED", "TARGET_GL", "TARGET_GLES", "TARGET_GLES2", "TARGET_GLES3", "TARGET_DESKTOP_GLES", "TARGET_WEBGL", "TARGET_HEADLESS", "TARGET_EGL"]
     magnum_config = []
 
     magnum_components, magnum_component_type, magnum_dependencies = get_magnum_components()
@@ -212,31 +212,39 @@ def check_magnum(conf, *k, **kw):
             index = find_in_string(config_content, '#define MAGNUM_' + config)
             if index > -1:
                 magnum_config.append(config)
+            else:
+                index = find_in_string(config_content, '#define  MAGNUM_' + config)
+                if index > -1:
+                    magnum_config.append(config)
         conf.end_msg(magnum_config)
 
         if 'TARGET_GL' in magnum_config:
             # to-do: make it work for other platforms; now only for desktop and only for GL
-            conf.start_msg('Magnum: Checking for OpenGL includes')
-            opengl_files = ['GL/gl.h', 'gl.h']
-            gl_not_found = False
-            for gl_file in opengl_files:
-                try:
-                    opengl_include_dir = get_directory(gl_file, includes_check)
-                    gl_not_found = False
-                    break
-                except:
-                    gl_not_found = True
-            if gl_not_found:
-                fatal(required, 'Not found')
-                return
-            magnum_includes = magnum_includes + [opengl_include_dir]
-            conf.end_msg(opengl_include_dir)
+            # no need to check on osx (it works anyway)
+            # Osx 11.3 (Big Sur) does not have libGL.dylib anymore (there is libGL.tbd)
+            # but at any rate, OpenGL is a framework so checking the dylib is not really what we need
+            if conf.env['DEST_OS'] != 'darwin':
+                conf.start_msg('Magnum: Checking for OpenGL includes')
+                opengl_files = ['GL/gl.h', 'gl.h']
+                gl_not_found = False
+                for gl_file in opengl_files:
+                    try:
+                        opengl_include_dir = get_directory(gl_file, includes_check)
+                        gl_not_found = False
+                        break
+                    except:
+                        gl_not_found = True
+                if gl_not_found:
+                    fatal(required, 'Not found')
+                    return
+                magnum_includes = magnum_includes + [opengl_include_dir]
+                conf.end_msg(opengl_include_dir)
 
-            conf.start_msg('Magnum: Checking for OpenGL lib')
-            opengl_lib_dir = get_directory('libGL.'+suffix, libs_check)
-            magnum_libpaths = magnum_libpaths + [opengl_lib_dir]
-            magnum_libs = magnum_libs + ['GL']
-            conf.end_msg(['GL'])
+                conf.start_msg('Magnum: Checking for OpenGL lib')
+                opengl_lib_dir = get_directory('libOpenGL.'+suffix, libs_check)
+                magnum_libpaths = magnum_libpaths + [opengl_lib_dir]
+                magnum_libs = magnum_libs + ['OpenGL']
+                conf.end_msg(['OpenGL'])
 
             conf.start_msg('Magnum: Checking for MagnumGL lib')
             gl_lib_dir = get_directory('libMagnumGL.'+suffix, libs_check)
@@ -246,6 +254,50 @@ def check_magnum(conf, *k, **kw):
         else:
             fatal(required, 'At the moment only desktop OpenGL is supported by WAF')
             return
+
+        egl_found = False
+        glx_found = False
+        if 'TARGET_HEADLESS' in magnum_config or 'TARGET_EGL' in magnum_config:
+            # TARGET_HEADLESS requires EGL
+            egl_inc = get_directory('EGL/egl.h', includes_check)
+
+            magnum_includes = magnum_includes + [egl_inc]
+
+            libs_egl = ['EGL']
+            for lib_egl in libs_egl:
+                try:
+                    lib_dir = get_directory('lib'+lib_egl+'.so', libs_check)
+                    egl_found = True
+
+                    magnum_libpaths = magnum_libpaths + [lib_dir]
+                    magnum_libs.append(lib_egl)
+                    break
+                except:
+                    egl_found = False
+
+            if not egl_found:
+                fatal(required, 'Not found')
+                return
+        else: # we need GLX
+            glx_inc = get_directory('GL/glx.h', includes_check)
+
+            magnum_includes = magnum_includes + [glx_inc]
+
+            libs_glx = ['GLX', 'X11']
+            for lib_glx in libs_glx:
+                try:
+                    lib_dir = get_directory('lib'+lib_glx+'.so', libs_check)
+                    glx_found = True
+
+                    magnum_libpaths = magnum_libpaths + [lib_dir]
+                    magnum_libs.append(lib_glx)
+                    # break
+                except:
+                    glx_found = False
+
+            if not glx_found:
+                fatal(required, 'Not found')
+                return
 
         conf.start_msg('Checking for Magnum components')
         # only check for components that can exist
@@ -315,13 +367,19 @@ def check_magnum(conf, *k, **kw):
                             except:
                                 glfw_found = False
 
-                        # GlfwApplication needs the libdl.so library
-                        try:
-                            lib_dir = get_directory('libdl.'+suffix, libs_check)
-                            magnum_component_libpaths[component] = magnum_component_libpaths[component] + [lib_dir]
-                            magnum_component_libs[component].append('dl')
-                        except:
-                            glfw_found = False
+                        # GlfwApplication needs the libdl.so library (except on mac)
+                        if conf.env['DEST_OS'] != 'darwin':
+                            libdl_libs = ['libdl.'+suffix, 'libdl.'+suffix+'.2']
+                            for libdl_lib in libdl_libs:
+                                try:
+                                    lib_dir = get_directory(libdl_lib, libs_check)
+                                    magnum_component_libpaths[component] = magnum_component_libpaths[component] + [lib_dir]
+                                    magnum_component_libs[component].append('dl')
+
+                                    glfw_found = True
+                                    break
+                                except:
+                                    glfw_found = False
 
                         if not glfw_found:
                             fatal(required, 'Not found')
@@ -358,58 +416,63 @@ def check_magnum(conf, *k, **kw):
                         magnum_component_libpaths[component] = magnum_component_libpaths[component] + conf.env['LIBPATH_MAGNUM_SDL']
                         magnum_component_libs[component] = magnum_component_libs[component] + conf.env['LIB_MAGNUM_SDL']
                         # Sdl2Application needs the libdl.so library
-                        try:
-                            lib_dir = get_directory('libdl.'+suffix, libs_check)
-                            magnum_component_libpaths[component] = magnum_component_libpaths[component] + [lib_dir]
-                            magnum_component_libs[component].append('dl')
-                        except:
-                            fatal(required, 'Not found')
-                            return
+                        if conf.env['DEST_OS'] != 'darwin':
+                            libdl_libs = ['libdl.'+suffix, 'libdl.'+suffix+'.2']
+                            for libdl_lib in libdl_libs:
+                                try:
+                                    lib_dir = get_directory(libdl_lib, libs_check)
+                                    magnum_component_libpaths[component] = magnum_component_libpaths[component] + [lib_dir]
+                                    magnum_component_libs[component].append('dl')
+                                except:
+                                    fatal(required, 'Not found')
+                                    return
                         # to-do: maybe copy flags?
                     elif component == 'WindowlessEglApplication':
-                        # WindowlessEglApplication requires EGL
-                        egl_inc = get_directory('EGL/egl.h', includes_check)
-
-                        magnum_component_includes[component] = magnum_component_includes[component] + [egl_inc]
-
-                        libs_egl = ['EGL']
-                        egl_found = False
-                        for lib_egl in libs_egl:
-                            try:
-                                lib_dir = get_directory('lib'+lib_egl+'.so', libs_check)
-                                egl_found = True
-
-                                magnum_component_libpaths[component] = magnum_component_libpaths[component] + [lib_dir]
-                                magnum_component_libs[component].append(lib_egl)
-                                break
-                            except:
-                                egl_found = False
-
                         if not egl_found:
-                            fatal(required, 'Not found')
-                            return
+                            # WindowlessEglApplication requires EGL
+                            egl_inc = get_directory('EGL/egl.h', includes_check)
+
+                            magnum_component_includes[component] = magnum_component_includes[component] + [egl_inc]
+
+                            libs_egl = ['EGL']
+                            egl_found = False
+                            for lib_egl in libs_egl:
+                                try:
+                                    lib_dir = get_directory('lib'+lib_egl+'.so', libs_check)
+                                    egl_found = True
+
+                                    magnum_component_libpaths[component] = magnum_component_libpaths[component] + [lib_dir]
+                                    magnum_component_libs[component].append(lib_egl)
+                                    break
+                                except:
+                                    egl_found = False
+
+                            if not egl_found:
+                                fatal(required, 'Not found')
+                                return
                     elif component == 'WindowlessGlxApplication' or component == 'GlxApplication':
-                        # [Windowless]GlxApplication requires GLX. X11
-                        glx_inc = get_directory('GL/glx.h', includes_check)
-
-                        magnum_component_includes[component] = magnum_component_includes[component] + [glx_inc]
-
-                        libs_glx = ['GLX', 'X11']
-                        glx_found = False
-                        for lib_glx in libs_glx:
-                            try:
-                                lib_dir = get_directory('lib'+lib_glx+'.so', libs_check)
-                                glx_found = True
-
-                                magnum_component_libpaths[component] = magnum_component_libpaths[component] + [lib_dir]
-                                magnum_component_libs[component].append(lib_glx)
-                                # break
-                            except:
-                                glx_found = False
-
                         if not glx_found:
-                            fatal(required, 'Not found')
-                            return
+                            # [Windowless]GlxApplication requires GLX. X11
+                            glx_inc = get_directory('GL/glx.h', includes_check)
+
+                            magnum_component_includes[component] = magnum_component_includes[component] + [glx_inc]
+
+                            libs_glx = ['GLX', 'X11']
+                            glx_found = False
+                            for lib_glx in libs_glx:
+                                try:
+                                    lib_dir = get_directory('lib'+lib_glx+'.so', libs_check)
+                                    glx_found = True
+
+                                    magnum_component_libpaths[component] = magnum_component_libpaths[component] + [lib_dir]
+                                    magnum_component_libs[component].append(lib_glx)
+                                    # break
+                                except:
+                                    glx_found = False
+
+                            if not glx_found:
+                                fatal(required, 'Not found')
+                                return
                     elif component not in ['WindowlessCglApplication', 'WindowlessWglApplication']:
                         # to-do: support all other applications
                         msg = 'Component ' + component + ' is not yet supported by WAF'

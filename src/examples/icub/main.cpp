@@ -97,6 +97,7 @@ public:
         double max_force = 500.;
         contact_right.min = Eigen::VectorXd::Zero(6);
         contact_right.max = Eigen::VectorXd::Zero(6);
+        contact_right.min.tail(3) << -max_force, 0., -max_force;
         contact_right.max.tail(3) << max_force, max_force, max_force;
         double max_torque = 100.;
         contact_right.cop_constraint = true;
